@@ -1,0 +1,11 @@
+{
+  "name": "supabase-tests",
+  "type": "module",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.47.15",
+    "dotenv": "^16.4.5"
+  },
+  "scripts": {
+    "test": "node gameIntegration.test.js"
+  }
+}
