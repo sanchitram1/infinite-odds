@@ -1,6 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
-import Game from "./components/Game";
-import SupabaseTest from "./components/SupabaseTest";
+import Game from "./components/Game.jsx";
+import SupabaseTest from "./components/SupabaseTest.jsx";
 import "./App.css";
 import "./components/Game.css";
 

@@ -1,5 +1,5 @@
 import { FlipGame, INITIAL_STAKE, MAX_FLIPS } from "../src/utils/gameLogic.js";
-import { supabase } from "../src/supabaseClient.js";
+import { createClient } from "@supabase/supabase-js";
 import * as dotenv from "dotenv";
 import { fileURLToPath } from "url";
 import { dirname, resolve } from "path";
@@ -11,13 +11,10 @@ const __dirname = dirname(__filename);
 
 // Load environment variables from frontend root
 const envPath = resolve(__dirname, "../.env.local");
+console.log("Looking for .env.local at:", envPath);
+
 if (!existsSync(envPath)) {
   console.error(`Error: Environment file not found at ${envPath}`);
-  console.error(
-    "Please ensure .env.local exists in the frontend directory with required variables:"
-  );
-  console.error("REACT_APP_SUPABASE_URL=your_supabase_url");
-  console.error("REACT_APP_SUPABASE_ANON_KEY=your_anon_key");
   process.exit(1);
 }
 
@@ -26,6 +23,12 @@ if (result.error) {
   console.error("Error loading environment variables:", result.error);
   process.exit(1);
 }
+
+// Create Supabase client for tests
+const supabase = createClient(
+  process.env.REACT_APP_SUPABASE_URL,
+  process.env.REACT_APP_SUPABASE_ANON_KEY
+);
 
 // Test Suite Statistics
 const stats = {
