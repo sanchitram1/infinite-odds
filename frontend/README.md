@@ -1,70 +1,90 @@
-# Getting Started with Create React App
+# Double or Bust - Coin Flip Game
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+A React-based coin flip game where players can double their stake or lose everything. Built with React and Supabase for data persistence.
 
-## Available Scripts
+## Game Mechanics
 
-In the project directory, you can run:
+- Players start with a stake of 1
+- Each flip has two possible outcomes:
+  - Heads (2x): Doubles the current stake
+  - Tails (Bust): Player loses everything
+- Players can cash out at any time to secure their winnings
+- Maximum of 10 successful flips allowed per game
+- All game results are stored in Supabase
 
-### `npm start`
+## Project Structure
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+```
+frontend/
+├── src/
+│   ├── components/
+│   │   ├── Game.jsx        # Main game component
+│   │   ├── Game.css        # Game styling
+│   │   └── SupabaseTest.jsx # Test component for Supabase
+│   ├── utils/
+│   │   └── gameLogic.js    # Core game mechanics
+│   ├── supabaseClient.js   # Supabase configuration
+│   └── App.js              # Main application routes
+├── tests/
+│   ├── supabaseTest.js     # Supabase connection tests
+│   └── gameIntegration.test.js # Integration tests
+└── .env.local             # Environment variables
+```
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+## Environment Variables
 
-### `npm test`
+The following environment variables are required in `.env.local`:
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+```
+REACT_APP_SUPABASE_URL=your-project-url
+REACT_APP_SUPABASE_ANON_KEY=your-anon-key
+```
 
-### `npm run build`
+- `REACT_APP_SUPABASE_URL`: Your Supabase project URL
+- `REACT_APP_SUPABASE_ANON_KEY`: Your Supabase anonymous key for public access
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+## Supabase Schema
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+The game uses a `flips` table with the following structure:
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+```sql
+Table: flips
+- id (uuid, auto-generated)
+- created_at (timestamptz, default: now())
+- player_address (text, nullable)
+- result (text) - 'win' or 'bust'
+- initial_stake (numeric, default: 1)
+- stake (numeric) - final amount
+- num_flips (integer) - number of flips in the game
+- flip_history (text) - sequence of flips (H for heads, T for tails)
+```
 
-### `npm run eject`
+## Getting Started
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+1. Clone the repository
+2. Install dependencies:
+   ```bash
+   cd frontend
+   npm install
+   ```
+3. Create `.env.local` with your Supabase credentials
+4. Start the development server:
+   ```bash
+   npm start
+   ```
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+## Running Tests
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+```bash
+cd frontend/tests
+npm install
+node gameIntegration.test.js
+```
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+## Development Notes
 
-## Learn More
-
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
-
-To learn React, check out the [React documentation](https://reactjs.org/).
-
-### Code Splitting
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
-
-### Analyzing the Bundle Size
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
-
-### Making a Progressive Web App
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+- The game uses React's `useCallback` for performance optimization
+- Game state is managed locally using React hooks
+- Results are saved to Supabase on game over or cash out
+- The UI updates in real-time as players flip or cash out
+- Error handling is implemented for both game logic and database operations
