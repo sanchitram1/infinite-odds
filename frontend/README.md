@@ -1,6 +1,13 @@
 # Double or Bust - Coin Flip Game
 
-A React-based coin flip game where players can double their stake or lose everything. Built with React and Supabase for data persistence.
+A React-based coin flip game where players can double their stake or lose everything.
+
+## Stack
+
+- React
+- Supabase
+- Hardhat (TBD, for contract stuff)
+- Vercel (TBD, for deployment)
 
 ## Game Mechanics
 
@@ -18,8 +25,8 @@ A React-based coin flip game where players can double their stake or lose everyt
 frontend/
 ├── src/
 │   ├── components/
-│   │   ├── Game.jsx        # Main game component
-│   │   ├── Game.css        # Game styling
+│   │   ├── Game.jsx        # Main game component (will move to contract)
+│   │   ├── Game.css        # Game styling (will move to contract)
 │   │   └── SupabaseTest.jsx # Test component for Supabase
 │   ├── utils/
 │   │   └── gameLogic.js    # Core game mechanics
