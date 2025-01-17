@@ -15,11 +15,7 @@ contract InfiniteOddsTest is Test {
 
     // Events for testing
     event FeeUpdated(uint256 newFee);
-    event PlayerCashedOut(
-        address indexed player,
-        uint256 amount,
-        uint256 feeAmount
-    );
+    event PlayerCashedOut(address indexed player, uint256 amount, uint256 feeAmount);
     event PlayerStaked(address indexed player, uint256 amount);
     event FeeCollectorUpdated(address indexed newCollector);
     event SignerUpdated(address indexed newSigner);
@@ -117,9 +113,7 @@ contract InfiniteOddsTest is Test {
         // Generate signature
         bytes32 domainSeparator = keccak256(
             abi.encode(
-                keccak256(
-                    "EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"
-                ),
+                keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"),
                 keccak256("InfiniteOdds"),
                 keccak256("1"),
                 block.chainid,
@@ -128,19 +122,10 @@ contract InfiniteOddsTest is Test {
         );
 
         bytes32 structHash = keccak256(
-            abi.encode(
-                keccak256(
-                    "CashOut(address player,uint256 amount,uint256 nonce)"
-                ),
-                player,
-                winAmount,
-                nonce
-            )
+            abi.encode(keccak256("CashOut(address player,uint256 amount,uint256 nonce)"), player, winAmount, nonce)
         );
 
-        bytes32 hash = keccak256(
-            abi.encodePacked("\x19\x01", domainSeparator, structHash)
-        );
+        bytes32 hash = keccak256(abi.encodePacked("\x19\x01", domainSeparator, structHash));
 
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(signerPrivateKey, hash);
         bytes memory signature = abi.encodePacked(r, s, v);
@@ -165,10 +150,7 @@ contract InfiniteOddsTest is Test {
         // Verify balances
         assertEq(player.balance, initialPlayerBalance + playerAmount);
         assertEq(feeCollector.balance, initialFeeCollectorBalance + feeAmount);
-        assertEq(
-            address(game).balance,
-            initialContractBalance - playerAmount - feeAmount
-        );
+        assertEq(address(game).balance, initialContractBalance - playerAmount - feeAmount);
     }
 
     function test_CashOut_InvalidSignature() public {
@@ -181,9 +163,7 @@ contract InfiniteOddsTest is Test {
         // Generate signature for different data
         bytes32 domainSeparator = keccak256(
             abi.encode(
-                keccak256(
-                    "EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"
-                ),
+                keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"),
                 keccak256("InfiniteOdds"),
                 keccak256("1"),
                 block.chainid,
@@ -193,18 +173,14 @@ contract InfiniteOddsTest is Test {
 
         bytes32 structHash = keccak256(
             abi.encode(
-                keccak256(
-                    "CashOut(address player,uint256 amount,uint256 nonce)"
-                ),
+                keccak256("CashOut(address player,uint256 amount,uint256 nonce)"),
                 player,
                 winAmount + 1, // Different amount
                 nonce
             )
         );
 
-        bytes32 hash = keccak256(
-            abi.encodePacked("\x19\x01", domainSeparator, structHash)
-        );
+        bytes32 hash = keccak256(abi.encodePacked("\x19\x01", domainSeparator, structHash));
 
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(signerPrivateKey, hash);
         bytes memory invalidSignature = abi.encodePacked(r, s, v);
@@ -225,9 +201,7 @@ contract InfiniteOddsTest is Test {
         // Generate signature with wrong key
         bytes32 domainSeparator = keccak256(
             abi.encode(
-                keccak256(
-                    "EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"
-                ),
+                keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"),
                 keccak256("InfiniteOdds"),
                 keccak256("1"),
                 block.chainid,
@@ -236,19 +210,10 @@ contract InfiniteOddsTest is Test {
         );
 
         bytes32 structHash = keccak256(
-            abi.encode(
-                keccak256(
-                    "CashOut(address player,uint256 amount,uint256 nonce)"
-                ),
-                player,
-                winAmount,
-                nonce
-            )
+            abi.encode(keccak256("CashOut(address player,uint256 amount,uint256 nonce)"), player, winAmount, nonce)
         );
 
-        bytes32 hash = keccak256(
-            abi.encodePacked("\x19\x01", domainSeparator, structHash)
-        );
+        bytes32 hash = keccak256(abi.encodePacked("\x19\x01", domainSeparator, structHash));
 
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(wrongPrivateKey, hash);
         bytes memory signature = abi.encodePacked(r, s, v);
@@ -268,9 +233,7 @@ contract InfiniteOddsTest is Test {
         // Generate valid signature
         bytes32 domainSeparator = keccak256(
             abi.encode(
-                keccak256(
-                    "EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"
-                ),
+                keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"),
                 keccak256("InfiniteOdds"),
                 keccak256("1"),
                 block.chainid,
@@ -279,19 +242,10 @@ contract InfiniteOddsTest is Test {
         );
 
         bytes32 structHash = keccak256(
-            abi.encode(
-                keccak256(
-                    "CashOut(address player,uint256 amount,uint256 nonce)"
-                ),
-                player,
-                winAmount,
-                nonce
-            )
+            abi.encode(keccak256("CashOut(address player,uint256 amount,uint256 nonce)"), player, winAmount, nonce)
         );
 
-        bytes32 hash = keccak256(
-            abi.encodePacked("\x19\x01", domainSeparator, structHash)
-        );
+        bytes32 hash = keccak256(abi.encodePacked("\x19\x01", domainSeparator, structHash));
 
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(signerPrivateKey, hash);
         bytes memory signature = abi.encodePacked(r, s, v);
@@ -313,9 +267,7 @@ contract InfiniteOddsTest is Test {
         // Generate valid signature
         bytes32 domainSeparator = keccak256(
             abi.encode(
-                keccak256(
-                    "EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"
-                ),
+                keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"),
                 keccak256("InfiniteOdds"),
                 keccak256("1"),
                 block.chainid,
@@ -324,19 +276,10 @@ contract InfiniteOddsTest is Test {
         );
 
         bytes32 structHash = keccak256(
-            abi.encode(
-                keccak256(
-                    "CashOut(address player,uint256 amount,uint256 nonce)"
-                ),
-                player,
-                winAmount,
-                nonce
-            )
+            abi.encode(keccak256("CashOut(address player,uint256 amount,uint256 nonce)"), player, winAmount, nonce)
         );
 
-        bytes32 hash = keccak256(
-            abi.encodePacked("\x19\x01", domainSeparator, structHash)
-        );
+        bytes32 hash = keccak256(abi.encodePacked("\x19\x01", domainSeparator, structHash));
 
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(signerPrivateKey, hash);
         bytes memory signature = abi.encodePacked(r, s, v);

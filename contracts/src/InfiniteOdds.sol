@@ -22,19 +22,14 @@ contract InfiniteOdds is Ownable, ReentrancyGuard {
     bytes32 private immutable DOMAIN_SEPARATOR;
 
     // EIP-712 TypeHash
-    bytes32 private constant CASHOUT_TYPEHASH =
-        keccak256("CashOut(address player,uint256 amount,uint256 nonce)");
+    bytes32 private constant CASHOUT_TYPEHASH = keccak256("CashOut(address player,uint256 amount,uint256 nonce)");
 
     // Mapping to prevent replay attacks
     mapping(address => mapping(uint256 => bool)) public usedNonces;
 
     // Events
     event FeeUpdated(uint256 newFee);
-    event PlayerCashedOut(
-        address indexed player,
-        uint256 amount,
-        uint256 feeAmount
-    );
+    event PlayerCashedOut(address indexed player, uint256 amount, uint256 feeAmount);
     event PlayerStaked(address indexed player, uint256 amount);
     event FeeCollectorUpdated(address indexed newCollector);
     event SignerUpdated(address indexed newSigner);
@@ -52,9 +47,7 @@ contract InfiniteOdds is Ownable, ReentrancyGuard {
 
         DOMAIN_SEPARATOR = keccak256(
             abi.encode(
-                keccak256(
-                    "EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"
-                ),
+                keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"),
                 keccak256("InfiniteOdds"),
                 keccak256("1"),
                 block.chainid,
@@ -98,23 +91,18 @@ contract InfiniteOdds is Ownable, ReentrancyGuard {
     /// @param amount Amount to cash out
     /// @param nonce Unique nonce to prevent replay attacks
     /// @param signature Signed message proving win
-    function verifySignature(
-        address player,
-        uint256 amount,
-        uint256 nonce,
-        bytes memory signature
-    ) public view returns (bool) {
+    function verifySignature(address player, uint256 amount, uint256 nonce, bytes memory signature)
+        public
+        view
+        returns (bool)
+    {
         require(!usedNonces[player][nonce], "Nonce already used");
 
         // Compute the hash of the cashout data
-        bytes32 structHash = keccak256(
-            abi.encode(CASHOUT_TYPEHASH, player, amount, nonce)
-        );
+        bytes32 structHash = keccak256(abi.encode(CASHOUT_TYPEHASH, player, amount, nonce));
 
         // Compute the EIP-712 compliant message hash
-        bytes32 hash = keccak256(
-            abi.encodePacked("\x19\x01", DOMAIN_SEPARATOR, structHash)
-        );
+        bytes32 hash = keccak256(abi.encodePacked("\x19\x01", DOMAIN_SEPARATOR, structHash));
 
         // Recover the signer and verify it matches our trusted signer
         return hash.recover(signature) == signer;
@@ -124,16 +112,9 @@ contract InfiniteOdds is Ownable, ReentrancyGuard {
     /// @param amount Amount to cash out
     /// @param nonce Unique nonce to prevent replay attacks
     /// @param signature Signed message proving win
-    function cashOut(
-        uint256 amount,
-        uint256 nonce,
-        bytes memory signature
-    ) external nonReentrant {
+    function cashOut(uint256 amount, uint256 nonce, bytes memory signature) external nonReentrant {
         require(amount > 0, "Cannot cash out 0");
-        require(
-            verifySignature(msg.sender, amount, nonce, signature),
-            "Invalid signature"
-        );
+        require(verifySignature(msg.sender, amount, nonce, signature), "Invalid signature");
 
         // Mark nonce as used
         usedNonces[msg.sender][nonce] = true;
@@ -143,14 +124,12 @@ contract InfiniteOdds is Ownable, ReentrancyGuard {
         uint256 playerAmount = amount - feeAmount;
 
         // Transfer winnings to player
-        (bool success1, ) = payable(msg.sender).call{value: playerAmount}("");
+        (bool success1,) = payable(msg.sender).call{value: playerAmount}("");
         require(success1, "Player transfer failed");
 
         // Transfer fee to collector
         if (feeAmount > 0) {
-            (bool success2, ) = payable(feeCollector).call{value: feeAmount}(
-                ""
-            );
+            (bool success2,) = payable(feeCollector).call{value: feeAmount}("");
             require(success2, "Fee transfer failed");
         }
 
