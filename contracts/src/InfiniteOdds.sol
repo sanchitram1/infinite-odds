@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
 /// @title InfiniteOdds
 /// @notice A contract for managing double-or-nothing coin flips
@@ -13,7 +13,11 @@ contract InfiniteOdds is Ownable, ReentrancyGuard {
 
     // Events
     event FeeUpdated(uint256 newFee);
-    event PlayerCashedOut(address indexed player, uint256 amount, uint256 feeAmount);
+    event PlayerCashedOut(
+        address indexed player,
+        uint256 amount,
+        uint256 feeAmount
+    );
 
     /// @notice Constructor sets initial fee
     constructor() Ownable(msg.sender) {
@@ -40,7 +44,7 @@ contract InfiniteOdds is Ownable, ReentrancyGuard {
         // TODO: Implement signature verification
         // TODO: Implement token transfer
         // TODO: Calculate and transfer fee
-        
+
         emit PlayerCashedOut(player, amount, (amount * fee) / FEE_DENOMINATOR);
     }
 }

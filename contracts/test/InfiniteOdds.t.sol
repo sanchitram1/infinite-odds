@@ -1,24 +1,27 @@
-// SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.13;
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.19;
 
-import {Test, console} from "forge-std/Test.sol";
-import {Counter} from "../src/Counter.sol";
+import {Test} from "forge-std/Test.sol";
+import {InfiniteOdds} from "../src/InfiniteOdds.sol";
 
-contract CounterTest is Test {
-    Counter public counter;
+contract InfiniteOddsTest is Test {
+    InfiniteOdds public game;
 
     function setUp() public {
-        counter = new Counter();
-        counter.setNumber(0);
+        game = new InfiniteOdds();
     }
 
-    function test_Increment() public {
-        counter.increment();
-        assertEq(counter.number(), 1);
+    function test_InitialFee() public {
+        assertEq(game.fee(), 500);
     }
 
-    function testFuzz_SetNumber(uint256 x) public {
-        counter.setNumber(x);
-        assertEq(counter.number(), x);
+    function test_SetFee() public {
+        game.setFee(800);
+        assertEq(game.fee(), 800);
+    }
+
+    function test_SetFeeTooHigh() public {
+        vm.expectRevert("Fee too high");
+        game.setFee(1100);
     }
 }
