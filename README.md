@@ -1,14 +1,17 @@
 # Infinite Odds
 
-A double-or-nothing coin flip game built on TEA's L2, where players can stake native TEA tokens and potentially double their stake with each successful flip.
+A double-or-nothing coin flip game built on TEA's L2, where players can stake native TEA
+tokens and potentially double their stake with each successful flip.
 
 ## Tech Stack
 
-- **Frontend**: React, ethers.js, Supabase
+- **Frontend**: React, ethers.js
+- **Database**: Supabase
 - **Smart Contracts**: Solidity, Foundry
 - **Chain**: TEA L2 (Assam)
 - **Authentication**: MetaMask for wallet connection
 - **Signatures**: EIP-712 for secure cashouts
+- **Deployments**: Foundry for smart contract, vercel for frontend (TODO)
 
 ## Project Structure
 
@@ -110,6 +113,7 @@ forge script script/Deploy.s.sol:DeployInfiniteOdds --rpc-url $RPC_URL --broadca
 - [ ] Rate limiting for cashouts, scaling in general
 - [ ] Reorganize frontend code structure
 - [ ] Error handling and recovery
+- [ ] Store txn hash in db for debugging
 
 ### Frontend
 
