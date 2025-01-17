@@ -94,8 +94,6 @@ const Game = ({ account, provider }) => {
             .insert([gameData]);
           
           if (supabaseError) throw supabaseError;
-          
-          setHasStaked(false); // Reset for next game
         } catch (err) {
           console.error('Error saving game:', err);
           setError('Failed to save game result: ' + err.message);
@@ -165,6 +163,7 @@ const Game = ({ account, provider }) => {
     setGame(newGame);
     setGameState(newGame.getGameState());
     setError(null);
+    setHasStaked(false); // Reset staking state when starting a new game
   }, []);
 
   if (!account) {
