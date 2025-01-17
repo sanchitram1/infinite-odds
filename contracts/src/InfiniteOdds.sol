@@ -3,12 +3,11 @@ pragma solidity ^0.8.19;
 
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 
 /// @title InfiniteOdds
-/// @notice A contract for managing double-or-nothing coin flips
+/// @notice A contract for managing double-or-nothing coin flips using native TEA token
 contract InfiniteOdds is Ownable, ReentrancyGuard {
     using MessageHashUtils for bytes32;
     using ECDSA for bytes32;
@@ -16,7 +15,6 @@ contract InfiniteOdds is Ownable, ReentrancyGuard {
     // State variables
     uint256 public fee; // Fee percentage (e.g., 500 = 5%)
     uint256 private constant FEE_DENOMINATOR = 10000;
-    IERC20 public immutable teaToken;
     address public feeCollector;
     address public signer; // Address that signs valid cashouts
 
@@ -41,20 +39,13 @@ contract InfiniteOdds is Ownable, ReentrancyGuard {
     event FeeCollectorUpdated(address indexed newCollector);
     event SignerUpdated(address indexed newSigner);
 
-    /// @notice Constructor sets initial fee, token address, and EIP-712 domain
-    /// @param _teaToken The address of the TEA token contract
+    /// @notice Constructor sets initial fee and EIP-712 domain
     /// @param _feeCollector Address to receive fees
     /// @param _signer Address that signs valid cashouts
-    constructor(
-        address _teaToken,
-        address _feeCollector,
-        address _signer
-    ) Ownable(msg.sender) {
-        require(_teaToken != address(0), "Invalid token address");
+    constructor(address _feeCollector, address _signer) Ownable(msg.sender) {
         require(_feeCollector != address(0), "Invalid fee collector");
         require(_signer != address(0), "Invalid signer");
 
-        teaToken = IERC20(_teaToken);
         feeCollector = _feeCollector;
         signer = _signer;
         fee = 500; // 5% default fee
@@ -96,15 +87,10 @@ contract InfiniteOdds is Ownable, ReentrancyGuard {
         emit FeeUpdated(newFee);
     }
 
-    /// @notice Stake tokens to play
-    /// @param amount Amount of tokens to stake
-    function stake(uint256 amount) external nonReentrant {
-        require(amount > 0, "Cannot stake 0");
-        require(
-            teaToken.transferFrom(msg.sender, address(this), amount),
-            "Transfer failed"
-        );
-        emit PlayerStaked(msg.sender, amount);
+    /// @notice Stake native TEA to play
+    function stake() external payable nonReentrant {
+        require(msg.value > 0, "Cannot stake 0");
+        emit PlayerStaked(msg.sender, msg.value);
     }
 
     /// @notice Verify the signature for a cashout
@@ -157,19 +143,20 @@ contract InfiniteOdds is Ownable, ReentrancyGuard {
         uint256 playerAmount = amount - feeAmount;
 
         // Transfer winnings to player
-        require(
-            teaToken.transfer(msg.sender, playerAmount),
-            "Player transfer failed"
-        );
+        (bool success1, ) = payable(msg.sender).call{value: playerAmount}("");
+        require(success1, "Player transfer failed");
 
         // Transfer fee to collector
         if (feeAmount > 0) {
-            require(
-                teaToken.transfer(feeCollector, feeAmount),
-                "Fee transfer failed"
+            (bool success2, ) = payable(feeCollector).call{value: feeAmount}(
+                ""
             );
+            require(success2, "Fee transfer failed");
         }
 
         emit PlayerCashedOut(msg.sender, playerAmount, feeAmount);
     }
+
+    // Allow contract to receive native TEA
+    receive() external payable {}
 }

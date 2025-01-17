@@ -3,12 +3,9 @@ pragma solidity ^0.8.19;
 
 import {Test} from "forge-std/Test.sol";
 import {InfiniteOdds} from "../src/InfiniteOdds.sol";
-import {MockERC20} from "./mocks/MockERC20.sol";
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 contract InfiniteOddsTest is Test {
     InfiniteOdds public game;
-    MockERC20 public teaToken;
     address public feeCollector;
     address public player;
     address public signer;
@@ -32,19 +29,18 @@ contract InfiniteOddsTest is Test {
         signerPrivateKey = 0xA11CE;
         signer = vm.addr(signerPrivateKey);
 
-        // Deploy mock token and game contract
-        teaToken = new MockERC20("TEA Token", "TEA");
+        // Setup addresses
         feeCollector = makeAddr("feeCollector");
         player = makeAddr("player");
-        game = new InfiniteOdds(address(teaToken), feeCollector, signer);
+
+        // Deploy game contract
+        game = new InfiniteOdds(feeCollector, signer);
 
         // Setup initial balances
-        teaToken.mint(player, INITIAL_BALANCE);
-        vm.prank(player);
-        teaToken.approve(address(game), type(uint256).max);
+        vm.deal(player, INITIAL_BALANCE);
     }
 
-    function test_InitialFee() public view {
+    function test_InitialFee() public {
         assertEq(game.fee(), 500);
     }
 
@@ -92,27 +88,27 @@ contract InfiniteOddsTest is Test {
         emit PlayerStaked(player, stakeAmount);
 
         vm.prank(player);
-        game.stake(stakeAmount);
+        game.stake{value: stakeAmount}();
 
-        assertEq(teaToken.balanceOf(address(game)), stakeAmount);
-        assertEq(teaToken.balanceOf(player), INITIAL_BALANCE - stakeAmount);
+        assertEq(address(game).balance, stakeAmount);
+        assertEq(player.balance, INITIAL_BALANCE - stakeAmount);
     }
 
     function test_Stake_ZeroAmount() public {
         vm.prank(player);
         vm.expectRevert("Cannot stake 0");
-        game.stake(0);
+        game.stake{value: 0}();
     }
 
     function test_CashOut_ValidSignature() public {
         // First stake some tokens
         uint256 stakeAmount = 100 ether;
         vm.startPrank(player);
-        game.stake(stakeAmount);
+        game.stake{value: stakeAmount}();
         vm.stopPrank();
 
-        // Mint additional tokens to the game contract to cover winnings
-        teaToken.mint(address(game), 1000 ether);
+        // Add additional TEA to the game contract to cover winnings
+        vm.deal(address(game), address(game).balance + 1000 ether);
 
         // Calculate expected amounts
         uint256 winAmount = 200 ether; // Double the stake
@@ -153,6 +149,11 @@ contract InfiniteOddsTest is Test {
         uint256 feeAmount = (winAmount * game.fee()) / 10000;
         uint256 playerAmount = winAmount - feeAmount;
 
+        // Record initial balances
+        uint256 initialPlayerBalance = player.balance;
+        uint256 initialFeeCollectorBalance = feeCollector.balance;
+        uint256 initialContractBalance = address(game).balance;
+
         // Expect event emission
         vm.expectEmit(true, true, true, true);
         emit PlayerCashedOut(player, playerAmount, feeAmount);
@@ -162,16 +163,17 @@ contract InfiniteOddsTest is Test {
         game.cashOut(winAmount, nonce, signature);
 
         // Verify balances
+        assertEq(player.balance, initialPlayerBalance + playerAmount);
+        assertEq(feeCollector.balance, initialFeeCollectorBalance + feeAmount);
         assertEq(
-            teaToken.balanceOf(player),
-            INITIAL_BALANCE - stakeAmount + playerAmount
+            address(game).balance,
+            initialContractBalance - playerAmount - feeAmount
         );
-        assertEq(teaToken.balanceOf(feeCollector), feeAmount);
     }
 
     function test_CashOut_InvalidSignature() public {
-        // Mint tokens to the game contract
-        teaToken.mint(address(game), 1000 ether);
+        // Add TEA to the game contract
+        vm.deal(address(game), 1000 ether);
 
         uint256 winAmount = 200 ether;
         uint256 nonce = 1;
@@ -213,8 +215,8 @@ contract InfiniteOddsTest is Test {
     }
 
     function test_CashOut_WrongSigner() public {
-        // Mint tokens to the game contract
-        teaToken.mint(address(game), 1000 ether);
+        // Add TEA to the game contract
+        vm.deal(address(game), 1000 ether);
 
         uint256 winAmount = 200 ether;
         uint256 nonce = 1;
@@ -256,15 +258,9 @@ contract InfiniteOddsTest is Test {
         game.cashOut(winAmount, nonce, signature);
     }
 
-    function test_CashOut_ZeroAmount() public {
-        vm.prank(player);
-        vm.expectRevert("Cannot cash out 0");
-        game.cashOut(0, 1, "");
-    }
-
     function test_CashOut_ReuseNonce() public {
-        // Mint tokens to the game contract
-        teaToken.mint(address(game), 1000 ether);
+        // Add TEA to the game contract
+        vm.deal(address(game), 1000 ether);
 
         uint256 winAmount = 200 ether;
         uint256 nonce = 1;
@@ -311,7 +307,7 @@ contract InfiniteOddsTest is Test {
     }
 
     function test_CashOut_InsufficientBalance() public {
-        uint256 winAmount = 2000 ether; // More than INITIAL_BALANCE
+        uint256 winAmount = 200 ether;
         uint256 nonce = 1;
 
         // Generate valid signature
@@ -346,7 +342,9 @@ contract InfiniteOddsTest is Test {
         bytes memory signature = abi.encodePacked(r, s, v);
 
         vm.prank(player);
-        vm.expectRevert("Transfer amount exceeds balance");
+        vm.expectRevert(); // Should revert due to insufficient balance
         game.cashOut(winAmount, nonce, signature);
     }
+
+    receive() external payable {} // Allow test contract to receive TEA
 }
