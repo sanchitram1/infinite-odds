@@ -44,7 +44,7 @@ contract InfiniteOddsTest is Test {
         teaToken.approve(address(game), type(uint256).max);
     }
 
-    function test_InitialFee() public {
+    function test_InitialFee() public view {
         assertEq(game.fee(), 500);
     }
 
