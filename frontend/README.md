@@ -1,4 +1,4 @@
-# Double or Bust - Coin Flip Game
+# frontend
 
 A React-based coin flip game where players can double their stake or lose everything.
 
@@ -6,7 +6,6 @@ A React-based coin flip game where players can double their stake or lose everyt
 
 - React
 - Supabase
-- Hardhat (TBD, for contract stuff)
 - Vercel (TBD, for deployment)
 
 ## Game Mechanics
@@ -25,11 +24,12 @@ A React-based coin flip game where players can double their stake or lose everyt
 frontend/
 ├── src/
 │   ├── components/
-│   │   ├── Game.jsx        # Main game component (will move to contract)
-│   │   ├── Game.css        # Game styling (will move to contract)
+│   │   ├── Game.jsx        # Main game component
+│   │   ├── Game.css        # Game styling
 │   │   └── SupabaseTest.jsx # Test component for Supabase
 │   ├── utils/
 │   │   └── gameLogic.js    # Core game mechanics
+│   │   └── signature.js    # Signing service
 │   ├── supabaseClient.js   # Supabase configuration
 │   └── App.js              # Main application routes
 ├── tests/
@@ -49,6 +49,7 @@ REACT_APP_SUPABASE_ANON_KEY=your-anon-key
 
 - `REACT_APP_SUPABASE_URL`: Your Supabase project URL
 - `REACT_APP_SUPABASE_ANON_KEY`: Your Supabase anonymous key for public access
+- `REACT_APP_SIGNER_PRIVATE_KEY`: Your signer private key with 0x prefix
 
 ## Supabase Schema
 

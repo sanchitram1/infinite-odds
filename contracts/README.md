@@ -1,66 +1,133 @@
-## Foundry
+# Infinite Odds Contracts
 
-**Foundry is a blazing fast, portable and modular toolkit for Ethereum application development written in Rust.**
+Smart contracts for the Infinite Odds game, handling native TEA token staking and secure cashouts.
 
-Foundry consists of:
+## Development Tools
 
--   **Forge**: Ethereum testing framework (like Truffle, Hardhat and DappTools).
--   **Cast**: Swiss army knife for interacting with EVM smart contracts, sending transactions and getting chain data.
--   **Anvil**: Local Ethereum node, akin to Ganache, Hardhat Network.
--   **Chisel**: Fast, utilitarian, and verbose solidity REPL.
+- **Foundry**: Smart contract development framework
+- **Solidity**: ^0.8.19
+- **OpenZeppelin**: Contract dependencies for standard implementations
+  - `ReentrancyGuard`: Prevent reentrancy attacks
+  - `Ownable`: Access control
+  - `ECDSA`: Signature verification
+  - `MessageHashUtils`: EIP-712 signature utilities
 
-## Documentation
+## Contract Overview
 
-https://book.getfoundry.sh/
+The main contract `InfiniteOdds.sol` manages the game's staking and cashout mechanics:
 
-## Usage
+### Key Features
 
-### Build
+- Native TEA token staking
+- EIP-712 signed cashouts
+- Fee collection system (configurable up to 10%)
+- Replay attack protection via nonces
+- Reentrancy protection
+- Owner-controlled parameters
 
-```shell
-$ forge build
+### Key Functions
+
+#### stake()
+
+Players stake native TEA to play the game.
+
+```solidity
+function stake() external payable nonReentrant
 ```
 
-### Test
+- **Input**: Native TEA sent via `msg.value`
+- **Requirements**: Amount must be > 0
+- **Events**: Emits `PlayerStaked(address player, uint256 amount)`
 
-```shell
-$ forge test
+#### cashOut()
+
+Players cash out their winnings with a valid signature.
+
+```solidity
+function cashOut(
+    uint256 amount,
+    uint256 nonce,
+    bytes memory signature
+) external nonReentrant
 ```
 
-### Format
+- **Inputs**:
+  - `amount`: Amount to cash out in TEA
+  - `nonce`: Unique number to prevent replay attacks
+  - `signature`: EIP-712 signature from authorized signer
+- **Requirements**:
+  - Valid signature from authorized signer
+  - Unused nonce
+  - Contract has sufficient balance
+- **Events**: Emits `PlayerCashedOut(address player, uint256 amount, uint256 feeAmount)`
 
-```shell
-$ forge fmt
+## Testing
+
+The test suite covers all major contract functionality:
+
+```bash
+# Run all tests
+forge test
+
+# Run with verbosity for more details
+forge test -vvv
+
+# Run a specific test
+forge test --match-test test_CashOut_ValidSignature -vvv
 ```
 
-### Gas Snapshots
+### Test Coverage
 
-```shell
-$ forge snapshot
+- Initial setup and configuration
+- Staking functionality
+- Cashout with valid signatures
+- Invalid signature handling
+- Nonce replay protection
+- Fee calculations
+- Balance checks
+- Access control
+
+## Deployment
+
+### Prerequisites
+
+1. Configure environment variables:
+
+```bash
+cp .env.example .env
 ```
 
-### Anvil
+Required variables:
 
-```shell
-$ anvil
+```
+RPC_URL=            # L2 RPC endpoint
+CHAIN_ID=           # L2 chain ID
+PRIVATE_KEY=        # Deployer's private key
+FEE_COLLECTOR_ADDRESS= # Address to receive fees
+SIGNER_PRIVATE_KEY= # Key that will sign valid cashouts
 ```
 
-### Deploy
+2. Deploy contract:
 
-```shell
-$ forge script script/Counter.s.sol:CounterScript --rpc-url <your_rpc_url> --private-key <your_private_key>
+```bash
+forge script script/Deploy.s.sol:DeployInfiniteOdds --rpc-url $RPC_URL --broadcast --legacy -vvvv
 ```
 
-### Cast
+### Post-Deployment
 
-```shell
-$ cast <subcommand>
-```
+1. Note the deployed contract address
+2. Update frontend configuration with new address
+3. Test basic functionality:
+   - Stake small amount
+   - Generate test signature
+   - Attempt cashout
 
-### Help
+## Security Considerations
 
-```shell
-$ forge --help
-$ anvil --help
-$ cast --help
-```
+- Keep signer private key secure
+- Monitor contract balance
+- Consider implementing:
+  - Emergency pause
+  - Balance-based stake limits
+  - Rate limiting
+  - Owner key rotation
