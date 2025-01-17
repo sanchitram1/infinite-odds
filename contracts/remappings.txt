@@ -1,1 +1,0 @@
-@openzeppelin/contracts/=/Users/sanch/tea/infinite-odds/contracts/lib/openzeppelin-contracts/contracts
