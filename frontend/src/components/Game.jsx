@@ -3,6 +3,7 @@ import { supabase } from '../supabaseClient';
 import { FlipGame, MAX_FLIPS } from '../utils/gameLogic';
 import { ethers } from 'ethers';
 import { getContract, CONTRACT_ADDRESS } from '../contracts/InfiniteOdds';
+import { generateCashoutSignature } from '../utils/signature';
 
 const Game = ({ account, provider }) => {
   const [game, setGame] = useState(() => new FlipGame());
@@ -57,8 +58,11 @@ const Game = ({ account, provider }) => {
       await tx.wait();
       console.log('Stake transaction confirmed!');
 
+      // Initialize a new game with the staked amount
+      const newGame = new FlipGame();
+      setGame(newGame);
+      setGameState(newGame.getGameState());
       setHasStaked(true);
-      startNewGame();
     } catch (err) {
       console.error('Staking error:', err);
       setError(err.message);
@@ -110,7 +114,7 @@ const Game = ({ account, provider }) => {
       setIsLoading(true);
       setLastTxHash(null);
       
-      if (!signer) {
+      if (!signer || !account) {
         throw new Error('Please connect your wallet first');
       }
 
@@ -119,10 +123,10 @@ const Game = ({ account, provider }) => {
 
       setGameState(game.getGameState());
       
-      // TODO: Get signature from backend
-      const nonce = Date.now(); // This should come from backend
-      const signature = '0x'; // This should come from backend
+      // Generate signature for cashout
       const amount = ethers.utils.parseEther(result.finalStake.toString());
+      const nonce = Date.now();
+      const signature = await generateCashoutSignature(account, amount, nonce);
       
       // Call contract cashOut
       const contract = getContract(signer);
@@ -148,22 +152,20 @@ const Game = ({ account, provider }) => {
       
       if (supabaseError) throw supabaseError;
       
-      setHasStaked(false); // Reset for next game
+      // Show success message before resetting
+      setError('Successfully cashed out! Start a new game to play again.');
+      setHasStaked(false);
     } catch (err) {
       console.error('Error cashing out:', err);
       setError(err.message);
     } finally {
       setIsLoading(false);
     }
-  }, [game, signer, stakeAmount]);
+  }, [game, signer, stakeAmount, account]);
 
   const startNewGame = useCallback(() => {
     console.log('Starting new game');
-    const newGame = new FlipGame();
-    setGame(newGame);
-    setGameState(newGame.getGameState());
-    setError(null);
-    setHasStaked(false); // Reset staking state when starting a new game
+    setHasStaked(false); // Reset staking state to go back to staking screen
   }, []);
 
   if (!account) {
