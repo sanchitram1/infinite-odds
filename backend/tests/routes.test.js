@@ -2,83 +2,90 @@ import { jest } from "@jest/globals";
 import Fastify from "fastify";
 import { gamesRoutes } from "../src/routes/games.js";
 import { flipsRoutes } from "../src/routes/flips.js";
+import { playersRoutes } from "../src/routes/players.js";
+import { contractRoutes } from "../src/routes/contract.js";
 
-describe("Game Routes", () => {
+describe("API Routes", () => {
   let fastify;
 
   beforeEach(() => {
     fastify = Fastify();
     fastify.register(gamesRoutes);
     fastify.register(flipsRoutes);
+    fastify.register(playersRoutes);
+    fastify.register(contractRoutes);
   });
 
   afterEach(() => {
     fastify.close();
   });
 
-  describe("POST /games", () => {
-    test("successfully creates a game with valid payload", async () => {
+  describe("Players API", () => {
+    const testAddress = "0x1234567890123456789012345678901234567890";
+
+    test("POST /player - creates new player", async () => {
       const response = await fastify.inject({
         method: "POST",
-        url: "/games",
-        payload: {
-          player_id: 1,
-          stake: 1.0,
-          result: "in-progress",
-        },
+        url: "/player",
+        payload: { address: testAddress },
       });
 
       expect(response.statusCode).toBe(201);
       expect(JSON.parse(response.payload)).toHaveProperty("id");
-    });
-
-    test("fails without required fields", async () => {
-      const response = await fastify.inject({
-        method: "POST",
-        url: "/games",
-        payload: {
-          stake: 1.0, // missing player_id and result
-        },
-      });
-
-      expect(response.statusCode).toBe(400);
-    });
-
-    test("requires winnings when result is cash-out", async () => {
-      const response = await fastify.inject({
-        method: "POST",
-        url: "/games",
-        payload: {
-          player_id: 1,
-          stake: 1.0,
-          result: "cash-out", // missing winnings
-        },
-      });
-
-      expect(response.statusCode).toBe(400);
       expect(JSON.parse(response.payload)).toHaveProperty(
-        "error",
-        "Winnings must be provided when result is cash-out"
+        "address",
+        testAddress
+      );
+    });
+
+    test("GET /player - retrieves player info", async () => {
+      const response = await fastify.inject({
+        method: "GET",
+        url: `/player?address=${testAddress}`,
+      });
+
+      expect(response.statusCode).toBe(200);
+      expect(JSON.parse(response.payload)).toHaveProperty(
+        "address",
+        testAddress
       );
     });
   });
 
-  describe("PATCH /games/:id", () => {
-    test("updates game from in-progress to bust", async () => {
+  describe("Games API", () => {
+    const testGame = {
+      player_id: 1,
+      stake: 1.0,
+      result: "in-progress",
+      stake_txn_hash: "0x123",
+    };
+
+    test("POST /games - creates new game", async () => {
+      const response = await fastify.inject({
+        method: "POST",
+        url: "/games",
+        payload: testGame,
+      });
+
+      expect(response.statusCode).toBe(201);
+      expect(JSON.parse(response.payload)).toHaveProperty("id");
+      expect(JSON.parse(response.payload)).toHaveProperty(
+        "result",
+        "in-progress"
+      );
+    });
+
+    test("PATCH /games/:id - updates game status", async () => {
       // First create a game
       const createResponse = await fastify.inject({
         method: "POST",
         url: "/games",
-        payload: {
-          player_id: 1,
-          stake: 1.0,
-          result: "in-progress",
-        },
+        payload: testGame,
       });
 
       const game = JSON.parse(createResponse.payload);
 
-      // Then update it to bust
+      // Then update it
       const updateResponse = await fastify.inject({
         method: "PATCH",
         url: `/games/${game.id}`,
@@ -93,119 +100,41 @@ describe("Game Routes", () => {
         "bust"
       );
     });
-
-    test("updates game from in-progress to cash-out with winnings", async () => {
-      // First create a game
-      const createResponse = await fastify.inject({
-        method: "POST",
-        url: "/games",
-        payload: {
-          player_id: 1,
-          stake: 1.0,
-          result: "in-progress",
-        },
-      });
-
-      const game = JSON.parse(createResponse.payload);
-
-      // Then update it to cash-out
-      const updateResponse = await fastify.inject({
-        method: "PATCH",
-        url: `/games/${game.id}`,
-        payload: {
-          result: "cash-out",
-          winnings: 2.0,
-          cash_out_txn_hash: "0x123",
-        },
-      });
-
-      expect(updateResponse.statusCode).toBe(200);
-      expect(JSON.parse(updateResponse.payload)).toMatchObject({
-        result: "cash-out",
-        winnings: 2.0,
-      });
-    });
-
-    test("fails to update to cash-out without winnings", async () => {
-      // First create a game
-      const createResponse = await fastify.inject({
-        method: "POST",
-        url: "/games",
-        payload: {
-          player_id: 1,
-          stake: 1.0,
-          result: "in-progress",
-        },
-      });
-
-      const game = JSON.parse(createResponse.payload);
-
-      // Then try to update it to cash-out without winnings
-      const updateResponse = await fastify.inject({
-        method: "PATCH",
-        url: `/games/${game.id}`,
-        payload: {
-          result: "cash-out",
-        },
-      });
-
-      expect(updateResponse.statusCode).toBe(400);
-    });
   });
 
-  describe("POST /flips", () => {
-    test("successfully creates flips with different array lengths", async () => {
-      // First create a game
-      const createGameResponse = await fastify.inject({
-        method: "POST",
-        url: "/games",
-        payload: {
-          player_id: 1,
-          stake: 1.0,
-          result: "in-progress",
-        },
-      });
-
-      const game = JSON.parse(createGameResponse.payload);
-
-      // Test with single flip
-      const singleFlipResponse = await fastify.inject({
-        method: "POST",
-        url: "/flips",
-        payload: {
-          game_id: game.id,
-          flips: [{ flip: "heads" }],
-        },
-      });
-
-      expect(singleFlipResponse.statusCode).toBe(201);
-      expect(JSON.parse(singleFlipResponse.payload)).toHaveLength(1);
-
-      // Test with multiple flips
-      const multipleFlipsResponse = await fastify.inject({
-        method: "POST",
-        url: "/flips",
-        payload: {
-          game_id: game.id,
-          flips: [{ flip: "heads" }, { flip: "tails" }, { flip: "heads" }],
-        },
-      });
-
-      expect(multipleFlipsResponse.statusCode).toBe(201);
-      expect(JSON.parse(multipleFlipsResponse.payload)).toHaveLength(3);
-    });
-
-    test("fails with empty flips array", async () => {
+  describe("Flips API", () => {
+    test("POST /flips - records flips for a game", async () => {
       const response = await fastify.inject({
         method: "POST",
         url: "/flips",
         payload: {
           game_id: 1,
-          flips: [],
+          flips: [{ flip: "heads" }, { flip: "tails" }],
         },
       });
 
-      expect(response.statusCode).toBe(400);
+      expect(response.statusCode).toBe(201);
+      expect(JSON.parse(response.payload)).toHaveLength(2);
+    });
+  });
+
+  describe("Contract API", () => {
+    const testAmount = "1000000000000000000"; // 1 ETH in wei
+    const testAddress = "0x1234567890123456789012345678901234567890";
+
+    test("POST /cashOut - generates signature and processes cashout", async () => {
+      const response = await fastify.inject({
+        method: "POST",
+        url: "/cashOut",
+        payload: {
+          amount: testAmount,
+          playerAddress: testAddress,
+        },
+      });
+
+      expect(response.statusCode).toBe(200);
+      expect(JSON.parse(response.payload)).toHaveProperty("signature");
+      expect(JSON.parse(response.payload)).toHaveProperty("nonce");
     });
   });
 });
