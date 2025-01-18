@@ -8,6 +8,8 @@ import { CoinsIcon } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
+import LoadingScreen from './LoadingScreen';
+import GameHistory from './GameHistory';
 
 const Game = ({ account, provider }) => {
   const [game, setGame] = useState(() => new FlipGame());
@@ -176,6 +178,10 @@ const Game = ({ account, provider }) => {
     setHasStaked(false);
   }, []);
 
+  if (isLoading) {
+    return <LoadingScreen message={lastTxHash ? `Transaction pending: ${lastTxHash}` : 'Processing...'} />;
+  }
+
   if (!account) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-blue-100 to-blue-200 flex items-center justify-center p-4">
@@ -190,7 +196,7 @@ const Game = ({ account, provider }) => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-blue-100 to-blue-200 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-b from-blue-100 to-blue-200 flex flex-col items-center justify-center p-4">
       <Card className="w-full max-w-md">
         <CardHeader>
           <CardTitle className="text-center">St. Petersburg Coin Flip</CardTitle>
@@ -271,6 +277,7 @@ const Game = ({ account, provider }) => {
           )}
         </CardContent>
       </Card>
+      <GameHistory account={account} />
     </div>
   );
 };
