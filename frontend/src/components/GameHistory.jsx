@@ -6,26 +6,32 @@ export default function GameHistory({ account }) {
   const [gameHistory, setGameHistory] = useState([])
 
   useEffect(() => {
-    if (account) {
-      loadGameHistory()
-    }
-  }, [account])
+    async function loadGameHistory() {
+      if (!account) return;
+      
+      try {
+        // Read-only query to get game history
+        const { data, error } = await supabase
+          .from('games')
+          .select(`
+            *,
+            flips (
+              flip
+            )
+          `)
+          .eq('player_id', account)
+          .order('created_at', { ascending: false })
+          .limit(10)
 
-  const loadGameHistory = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('flips')
-        .select('*')
-        .eq('player_address', account)
-        .order('created_at', { ascending: false })
-        .limit(10)
-
-      if (error) throw error
-      setGameHistory(data || [])
-    } catch (error) {
-      console.error('Error loading game history:', error)
+        if (error) throw error
+        setGameHistory(data || [])
+      } catch (error) {
+        console.error('Error loading game history:', error)
+      }
     }
-  }
+
+    loadGameHistory()
+  }, [account]) // Now account is the only dependency
 
   return (
     <Card className="w-full max-w-md mt-4">
@@ -40,11 +46,13 @@ export default function GameHistory({ account }) {
           <ul className="space-y-2">
             {gameHistory.map((game, index) => (
               <li key={index} className="border-b pb-2">
-                <p>Initial Stake: {game.initial_stake} TEA</p>
-                <p>Final Stake: {game.stake} TEA</p>
+                <p>Initial Stake: {game.stake} TEA</p>
+                <p>Final Stake: {game.winnings || 0} TEA</p>
                 <p>Result: {game.result}</p>
-                <p>Flips: {game.num_flips}</p>
-                <p className="text-sm text-gray-500">History: {game.flip_history}</p>
+                <p>Flips: {game.flips?.length || 0}</p>
+                <p className="text-sm text-gray-500">
+                  History: {game.flips?.map(f => f.flip === 'heads' ? 'H' : 'T').join('')}
+                </p>
               </li>
             ))}
           </ul>

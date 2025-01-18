@@ -1,15 +1,14 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { supabase } from '../supabaseClient';
 import { FlipGame, MAX_FLIPS } from '../utils/gameLogic';
 import { ethers } from 'ethers';
 import { getContract } from '../contracts/InfiniteOdds';
-import { generateCashoutSignature } from '../utils/signature';
 import { CoinsIcon } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import LoadingScreen from './LoadingScreen';
 import GameHistory from './GameHistory';
+import { createPlayer, createGame, updateGame, recordFlips, requestCashOut } from '../api/client';
 
 const Game = ({ account, provider }) => {
   const [game, setGame] = useState(() => new FlipGame());
@@ -20,19 +19,21 @@ const Game = ({ account, provider }) => {
   const [hasStaked, setHasStaked] = useState(false);
   const [signer, setSigner] = useState(null);
   const [lastTxHash, setLastTxHash] = useState(null);
+  const [currentGameId, setCurrentGameId] = useState(null);
+  const [playerId, setPlayerId] = useState(null);
 
-  // Initialize ethers signer
+  // Initialize ethers signer and create/get player
   useEffect(() => {
     if (provider && account) {
       const signer = provider.getSigner();
       setSigner(signer);
+      
+      // Create or get player
+      createPlayer(account)
+        .then(player => setPlayerId(player.id))
+        .catch(err => console.error('Error creating/getting player:', err));
     }
   }, [provider, account]);
-
-  // Helper to convert flip array to string
-  const convertFlipsToString = (flips) => {
-    return flips.map(flip => flip === 'heads' ? 'H' : 'T').join('');
-  };
 
   const handleStake = async () => {
     try {
@@ -40,27 +41,26 @@ const Game = ({ account, provider }) => {
       setIsLoading(true);
       setLastTxHash(null);
 
-      if (!account) {
-        throw new Error('Please connect your wallet first');
-      }
-
-      if (!signer) {
-        throw new Error('Initializing... Please try again in a moment.');
-      }
+      if (!account) throw new Error('Please connect your wallet first');
+      if (!signer) throw new Error('Initializing... Please try again in a moment.');
+      if (!playerId) throw new Error('Player setup incomplete. Please try again.');
 
       const amount = ethers.utils.parseEther(stakeAmount);
       if (amount.lte(0) || amount.gt(ethers.utils.parseEther('10'))) {
         throw new Error('Stake amount must be between 0 and 10 TEA');
       }
 
+      // Stake on contract
       const contract = getContract(signer);
       const tx = await contract.stake({ value: amount });
-      console.log('Stake transaction hash:', tx.hash);
       setLastTxHash(tx.hash);
-      
       await tx.wait();
-      console.log('Stake transaction confirmed!');
 
+      // Create game in database
+      const gameData = await createGame(playerId, Number(stakeAmount), tx.hash);
+      setCurrentGameId(gameData.id);
+
+      // Initialize game state
       const newGame = new FlipGame();
       setGame(newGame);
       setGameState(newGame.getGameState());
@@ -74,48 +74,35 @@ const Game = ({ account, provider }) => {
   };
 
   const handleFlip = useCallback(async () => {
+    if (!currentGameId) return;
+
     setError(null);
-    console.log('handleFlip called');
     const result = game.flip();
-    console.log('Flip result:', result);
     
     if (result) {
       setGameState(game.getGameState());
-      console.log('Updated game state:', game.getGameState());
       
-      if (result.isGameOver) {
-        try {
-          setIsLoading(true);
-          const gameData = {
-            player_address: account,
+      try {
+        // Record the flip
+        await recordFlips(currentGameId, [result.result]);
+        
+        if (result.isGameOver) {
+          // Update game status to bust
+          await updateGame(currentGameId, {
             result: 'bust',
-            initial_stake: Number(stakeAmount),
-            stake: 0,
-            num_flips: result.flipNumber,
-            flip_history: convertFlipsToString(game.flips)
-          };
-          
-          const { error: supabaseError } = await supabase
-            .from('flips')
-            .insert([gameData]);
-          
-          if (supabaseError) {
-            console.error('Database error:', supabaseError);
-            // Don't block the game flow on database error
-            setError('Game ended, but there was an error saving the result.');
-          }
-        } catch (err) {
-          console.error('Error saving game:', err);
-          // Don't block the game flow on database error
-          setError('Game ended, but there was an error saving the result.');
-        } finally {
-          setIsLoading(false);
+            winnings: 0
+          });
         }
+      } catch (err) {
+        console.error('Error recording flip:', err);
+        setError('Game state saved locally but there was an error saving to the server.');
       }
     }
-  }, [game, stakeAmount, account]);
+  }, [game, currentGameId]);
 
   const handleCashOut = useCallback(async () => {
+    if (!currentGameId) return;
+
     try {
       setError(null);
       setIsLoading(true);
@@ -131,39 +118,24 @@ const Game = ({ account, provider }) => {
       setGameState(game.getGameState());
       
       const amount = ethers.utils.parseEther(result.finalStake.toString());
-      const nonce = Date.now();
-      const signature = await generateCashoutSignature(account, amount, nonce);
       
+      // Get signature from backend
+      const { signature, nonce, txHash } = await requestCashOut(amount.toString(), account);
+      
+      // Execute cashout
       const contract = getContract(signer);
       const tx = await contract.cashOut(amount, nonce, signature);
-      console.log('Cashout transaction hash:', tx.hash);
       setLastTxHash(tx.hash);
-      
       await tx.wait();
-      console.log('Cashout transaction confirmed!');
 
-      // Save to Supabase
-      const gameData = {
-        player_address: account,
-        result: 'win',
-        initial_stake: Number(stakeAmount),
-        stake: result.finalStake,
-        num_flips: result.totalFlips,
-        flip_history: convertFlipsToString(result.flips)
-      };
-      
-      const { error: supabaseError } = await supabase
-        .from('flips')
-        .insert([gameData]);
-      
-      if (supabaseError) {
-        console.error('Database error:', supabaseError);
-        // Still allow the game to complete even if database save fails
-        setError('Successfully cashed out, but there was an error saving the result. Start a new game to play again.');
-      } else {
-        setError('Successfully cashed out! Start a new game to play again.');
-      }
-      
+      // Update game status
+      await updateGame(currentGameId, {
+        result: 'cash-out',
+        winnings: result.finalStake,
+        cash_out_txn_hash: tx.hash
+      });
+
+      setError('Successfully cashed out! Start a new game to play again.');
       setHasStaked(false);
     } catch (err) {
       console.error('Error cashing out:', err);
@@ -171,11 +143,11 @@ const Game = ({ account, provider }) => {
     } finally {
       setIsLoading(false);
     }
-  }, [game, signer, stakeAmount, account]);
+  }, [game, signer, account, currentGameId]);
 
   const startNewGame = useCallback(() => {
-    console.log('Starting new game');
     setHasStaked(false);
+    setCurrentGameId(null);
   }, []);
 
   if (isLoading) {
