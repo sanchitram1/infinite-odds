@@ -1,13 +1,30 @@
 import { useEffect, useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card"
 import { supabase } from '../supabaseClient'
+import { getPlayer } from '../api/client'
 
 export default function GameHistory({ account }) {
   const [gameHistory, setGameHistory] = useState([])
+  const [playerId, setPlayerId] = useState(null)
 
+  // First get the player ID
+  useEffect(() => {
+    async function fetchPlayerId() {
+      if (!account) return;
+      try {
+        const player = await getPlayer(account);
+        setPlayerId(player.id);
+      } catch (error) {
+        console.error('Error fetching player:', error);
+      }
+    }
+    fetchPlayerId();
+  }, [account]);
+
+  // Then load game history using player ID
   useEffect(() => {
     async function loadGameHistory() {
-      if (!account) return;
+      if (!playerId) return;
       
       try {
         // Read-only query to get game history
@@ -19,7 +36,7 @@ export default function GameHistory({ account }) {
               flip
             )
           `)
-          .eq('player_id', account)
+          .eq('player_id', playerId) // Using numeric player_id
           .order('created_at', { ascending: false })
           .limit(10)
 
@@ -31,7 +48,7 @@ export default function GameHistory({ account }) {
     }
 
     loadGameHistory()
-  }, [account]) // Now account is the only dependency
+  }, [playerId]) // Depend on playerId instead of account
 
   return (
     <Card className="w-full max-w-md mt-4">

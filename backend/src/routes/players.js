@@ -20,32 +20,52 @@ export async function playersRoutes(fastify) {
     },
     async (request, reply) => {
       const { address } = request.body;
+      console.log("Attempting to create/fetch player with address:", address);
 
       try {
         // Check if player already exists
-        const { data: existingPlayer } = await supabase
+        let { data: existingPlayer, error: fetchError } = await supabase
           .from("players")
           .select()
           .eq("address", address)
           .single();
 
+        if (fetchError && fetchError.code !== "PGRST116") {
+          // Not found error is ok
+          console.error("Error checking for existing player:", fetchError);
+          throw fetchError;
+        }
+
         if (existingPlayer) {
+          console.log("Player already exists:", existingPlayer);
           return reply.code(200).send(existingPlayer);
         }
 
         // Create new player
-        const { data, error } = await supabase
+        const { data: newPlayer, error: insertError } = await supabase
           .from("players")
           .insert({ address })
           .select()
           .single();
 
-        if (error) throw error;
+        if (insertError) {
+          console.error("Error creating new player:", insertError);
+          throw insertError;
+        }
 
-        return reply.code(201).send(data);
+        console.log("New player created:", newPlayer);
+        return reply.code(201).send(newPlayer);
       } catch (error) {
-        fastify.log.error(error);
-        return reply.code(500).send({ error: "Failed to create player" });
+        console.error("Error in player creation:", {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code,
+        });
+        return reply.code(500).send({
+          error: "Failed to create player",
+          details: error.message,
+        });
       }
     }
   );
@@ -69,10 +89,7 @@ export async function playersRoutes(fastify) {
     },
     async (request, reply) => {
       const { address } = request.query;
-
-      // Verify the request is coming from the player's address
-      // In a real implementation, this would verify a signed message or JWT
-      // For now, we're just trusting the address parameter
+      console.log("Fetching player with address:", address);
 
       try {
         const { data, error } = await supabase
@@ -81,15 +98,28 @@ export async function playersRoutes(fastify) {
           .eq("address", address)
           .single();
 
-        if (error) throw error;
+        if (error) {
+          console.error("Error fetching player:", error);
+          throw error;
+        }
+
         if (!data) {
           return reply.code(404).send({ error: "Player not found" });
         }
 
+        console.log("Player found:", data);
         return reply.send(data);
       } catch (error) {
-        fastify.log.error(error);
-        return reply.code(500).send({ error: "Failed to fetch player" });
+        console.error("Error in player fetch:", {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code,
+        });
+        return reply.code(500).send({
+          error: "Failed to fetch player",
+          details: error.message,
+        });
       }
     }
   );

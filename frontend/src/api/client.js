@@ -20,7 +20,11 @@ export async function createGame(playerId, stake) {
   const response = await fetch(`${API_URL}/games`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ playerId, stake }),
+    body: JSON.stringify({
+      player_id: playerId,
+      stake,
+      result: "in-progress",
+    }),
   });
   if (!response.ok) throw new Error("Failed to create game");
   return response.json();
@@ -40,7 +44,10 @@ export async function recordFlips(gameId, flips) {
   const response = await fetch(`${API_URL}/flips`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ gameId, flips }),
+    body: JSON.stringify({
+      game_id: gameId,
+      flips: flips.map((flip) => ({ flip })),
+    }),
   });
   if (!response.ok) throw new Error("Failed to record flips");
   return response.json();
@@ -50,7 +57,7 @@ export async function requestStake(gameId, amount) {
   const response = await fetch(`${API_URL}/stake`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ gameId, amount }),
+    body: JSON.stringify({ game_id: gameId, amount }),
   });
   if (!response.ok) throw new Error("Failed to process stake");
   return response.json();
@@ -60,7 +67,7 @@ export async function requestCashOut(gameId, amount) {
   const response = await fetch(`${API_URL}/cashOut`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ gameId, amount }),
+    body: JSON.stringify({ game_id: gameId, amount }),
   });
   if (!response.ok) throw new Error("Failed to process cash out");
   return response.json();
