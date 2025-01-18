@@ -136,3 +136,7 @@ typechain-types
 # Hardhat files
 cache
 artifacts
+
+# Cursor
+.cursorrules
+working-code
