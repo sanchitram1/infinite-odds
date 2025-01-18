@@ -46,6 +46,16 @@ export async function recordFlips(gameId, flips) {
   return response.json();
 }
 
+export async function requestStake(gameId, amount) {
+  const response = await fetch(`${API_URL}/stake`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ gameId, amount }),
+  });
+  if (!response.ok) throw new Error("Failed to process stake");
+  return response.json();
+}
+
 export async function requestCashOut(gameId, amount) {
   const response = await fetch(`${API_URL}/cashOut`, {
     method: "POST",

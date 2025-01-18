@@ -2,28 +2,67 @@ import { contract } from "../config/contract.js";
 import { ethers } from "ethers";
 
 export async function contractRoutes(fastify) {
+  // Stake endpoint
+  fastify.post(
+    "/stake",
+    {
+      schema: {
+        body: {
+          type: "object",
+          required: ["gameId", "amount"],
+          properties: {
+            gameId: { type: "number" },
+            amount: { type: "string" }, // Amount in wei as string
+          },
+        },
+      },
+    },
+    async (request, reply) => {
+      const { gameId, amount } = request.body;
+
+      try {
+        // Create the transaction object
+        const tx = {
+          to: contract.address,
+          value: amount,
+          data: contract.interface.encodeFunctionData("stake", []),
+        };
+
+        // Get gas estimate
+        const gasEstimate = await contract.provider.estimateGas(tx);
+        tx.gasLimit = gasEstimate.mul(120).div(100); // Add 20% buffer
+
+        return reply.send({ tx });
+      } catch (error) {
+        fastify.log.error(error);
+        return reply.code(500).send({
+          error: "Failed to process stake",
+          details: error.message,
+        });
+      }
+    }
+  );
+
+  // Existing cashout endpoint
   fastify.post(
     "/cashOut",
     {
       schema: {
         body: {
           type: "object",
-          required: ["amount", "playerAddress"],
+          required: ["gameId", "amount"],
           properties: {
+            gameId: { type: "number" },
             amount: { type: "string" }, // Amount in wei as string
-            playerAddress: {
-              type: "string",
-              pattern: "^0x[a-fA-F0-9]{40}$",
-            },
           },
         },
       },
     },
     async (request, reply) => {
-      const { amount, playerAddress } = request.body;
+      const { gameId, amount } = request.body;
 
       try {
-        // Generate nonce (using timestamp for simplicity) TODO: secure?
+        // Generate nonce
         const nonce = Date.now();
 
         // Create the message to sign
@@ -43,9 +82,9 @@ export async function contractRoutes(fastify) {
         };
 
         const value = {
-          player: playerAddress,
-          amount: amount,
-          nonce: nonce,
+          player: request.body.playerAddress,
+          amount,
+          nonce,
         };
 
         // Sign the message
@@ -55,13 +94,24 @@ export async function contractRoutes(fastify) {
           value
         );
 
-        // Call the contract
-        const tx = await contract.cashOut(amount, nonce, signature);
+        // Create the transaction object
+        const tx = {
+          to: contract.address,
+          data: contract.interface.encodeFunctionData("cashOut", [
+            amount,
+            nonce,
+            signature,
+          ]),
+        };
+
+        // Get gas estimate
+        const gasEstimate = await contract.provider.estimateGas(tx);
+        tx.gasLimit = gasEstimate.mul(120).div(100); // Add 20% buffer
 
         return reply.send({
-          txHash: tx.hash,
-          nonce,
+          tx,
           signature,
+          nonce,
         });
       } catch (error) {
         fastify.log.error(error);

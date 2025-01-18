@@ -1,14 +1,13 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { FlipGame, MAX_FLIPS, MAX_STAKE, MIN_STAKE } from '../utils/gameLogic';
 import { ethers } from 'ethers';
-import { getContract } from '../contracts/InfiniteOdds';
 import { CoinsIcon } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import LoadingScreen from './LoadingScreen';
 import GameHistory from './GameHistory';
-import { createPlayer, createGame, updateGame, recordFlips, requestCashOut } from '../api/client';
+import { createPlayer, createGame, updateGame, recordFlips, requestCashOut, requestStake } from '../api/client';
 
 const Game = ({ account, provider }) => {
   const [game, setGame] = useState(() => new FlipGame());
@@ -51,24 +50,30 @@ const Game = ({ account, provider }) => {
         throw new Error(`Stake amount must be between ${MIN_STAKE} and ${MAX_STAKE} TEA`);
       }
 
-      // Stake on contract
-      const contract = getContract(signer);
-      const tx = await contract.stake({ value: amount });
-      setLastTxHash(tx.hash);
-      await tx.wait();
-
-      // Create game in database
-      const gameData = await createGame(playerId, Number(stakeAmount), tx.hash);
+      // Create game in database first
+      const gameData = await createGame(playerId, Number(stakeAmount));
       setCurrentGameId(gameData.id);
 
+      // Get stake transaction from backend
+      const { tx } = await requestStake(gameData.id, amount.toString());
+
+      // Execute stake transaction
+      const transaction = await signer.sendTransaction(tx);
+      setLastTxHash(transaction.hash);
+      await transaction.wait();
+
       // Initialize game state
-      const newGame = new FlipGame();
+      const newGame = new FlipGame(Number(stakeAmount));
       setGame(newGame);
       setGameState(newGame.getGameState());
       setHasStaked(true);
     } catch (err) {
       console.error('Staking error:', err);
       setError(err.message);
+      // If we created a game but staking failed, update game status
+      if (currentGameId) {
+        await updateGame(currentGameId, { status: 'failed' });
+      }
     } finally {
       setIsLoading(false);
     }
@@ -120,20 +125,18 @@ const Game = ({ account, provider }) => {
       
       const amount = ethers.utils.parseEther(result.finalStake.toString());
       
-      // Get signature from backend
-      const { signature, nonce, txHash } = await requestCashOut(amount.toString(), account);
+      // Get cashout data from backend
+      const { tx, signature, nonce } = await requestCashOut(currentGameId, amount.toString());
       
-      // Execute cashout
-      const contract = getContract(signer);
-      const tx = await contract.cashOut(amount, nonce, signature);
-      setLastTxHash(tx.hash);
-      await tx.wait();
+      // Execute transaction
+      const transaction = await signer.sendTransaction(tx);
+      setLastTxHash(transaction.hash);
+      await transaction.wait();
 
       // Update game status
       await updateGame(currentGameId, {
         result: 'cash-out',
-        winnings: result.finalStake,
-        cash_out_txn_hash: tx.hash
+        winnings: result.finalStake
       });
 
       setError('Successfully cashed out! Start a new game to play again.');
