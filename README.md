@@ -111,14 +111,16 @@ forge script script/Deploy.s.sol:DeployInfiniteOdds --rpc-url $RPC_URL --broadca
 ### Architecture
 
 - [ ] Rate limiting for cashouts, scaling in general
-- [ ] Reorganize frontend code structure
+- [x] Reorganize frontend code structure
 - [ ] Error handling and recovery
 - [ ] Store txn hash in db for debugging
+- [x] Better db schema
+- [ ] RLS
 
 ### Frontend
 
-- [ ] Add loading states and better error messages
-- [ ] Improve UI/UX design
+- [x] Add loading states and better error messages
+- [x] Improve UI/UX design
 
 ### Business Logic
 
