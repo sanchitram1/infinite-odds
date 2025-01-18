@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { FlipGame, MAX_FLIPS } from '../utils/gameLogic';
+import { FlipGame, MAX_FLIPS, MAX_STAKE, MIN_STAKE } from '../utils/gameLogic';
 import { ethers } from 'ethers';
 import { getContract } from '../contracts/InfiniteOdds';
 import { CoinsIcon } from 'lucide-react';
@@ -46,8 +46,9 @@ const Game = ({ account, provider }) => {
       if (!playerId) throw new Error('Player setup incomplete. Please try again.');
 
       const amount = ethers.utils.parseEther(stakeAmount);
-      if (amount.lte(0) || amount.gt(ethers.utils.parseEther('10'))) {
-        throw new Error('Stake amount must be between 0 and 10 TEA');
+      if (amount.lte(ethers.utils.parseEther(MIN_STAKE.toString())) || 
+          amount.gt(ethers.utils.parseEther(MAX_STAKE.toString()))) {
+        throw new Error(`Stake amount must be between ${MIN_STAKE} and ${MAX_STAKE} TEA`);
       }
 
       // Stake on contract
