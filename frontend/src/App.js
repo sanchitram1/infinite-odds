@@ -1,10 +1,8 @@
-import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { useState, useEffect } from "react";
 import Game from "./components/Game.jsx";
-import SupabaseTest from "./components/SupabaseTest.jsx";
-import "./App.css";
-import "./components/Game.css";
 import { ethers } from "ethers";
+import { Button } from "./components/ui/button";
 
 function App() {
   const [account, setAccount] = useState(null);
@@ -46,31 +44,34 @@ function App() {
 
   return (
     <Router>
-      <div className="App">
-        <div className="wallet-info">
-          {!account ? (
-            <button onClick={connectWallet}>Connect Wallet</button>
-          ) : (
-            <div>
-              <p>
-                Connected: {account.slice(0, 6)}...{account.slice(-4)}
-              </p>
-              {balance && <p>TEA Balance: {balance}</p>}
-            </div>
-          )}
+      <div className="min-h-screen bg-gradient-to-b from-blue-100 to-blue-200">
+        <div className="container mx-auto px-4 py-6">
+          <div className="flex justify-end mb-8">
+            {!account ? (
+              <Button onClick={connectWallet} variant="outline">
+                Connect Wallet
+              </Button>
+            ) : (
+              <div className="text-right">
+                <p className="text-sm font-medium">
+                  Connected: {account.slice(0, 6)}...{account.slice(-4)}
+                </p>
+                {balance && (
+                  <p className="text-sm text-gray-600">
+                    TEA Balance: {Number(balance).toFixed(4)}
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+
+          <Routes>
+            <Route
+              path="/"
+              element={<Game account={account} provider={provider} />}
+            />
+          </Routes>
         </div>
-
-        <nav>
-          <Link to="/">Game</Link> | <Link to="/test">Supabase Test</Link>
-        </nav>
-
-        <Routes>
-          <Route path="/test" element={<SupabaseTest />} />
-          <Route
-            path="/"
-            element={<Game account={account} provider={provider} />}
-          />
-        </Routes>
       </div>
     </Router>
   );

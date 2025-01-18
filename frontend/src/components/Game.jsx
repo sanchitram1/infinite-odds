@@ -2,8 +2,12 @@ import React, { useState, useCallback, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
 import { FlipGame, MAX_FLIPS } from '../utils/gameLogic';
 import { ethers } from 'ethers';
-import { getContract, CONTRACT_ADDRESS } from '../contracts/InfiniteOdds';
+import { getContract } from '../contracts/InfiniteOdds';
 import { generateCashoutSignature } from '../utils/signature';
+import { CoinsIcon } from 'lucide-react';
+import { Button } from './ui/button';
+import { Input } from './ui/input';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 
 const Game = ({ account, provider }) => {
   const [game, setGame] = useState(() => new FlipGame());
@@ -47,10 +51,7 @@ const Game = ({ account, provider }) => {
         throw new Error('Stake amount must be between 0 and 10 TEA');
       }
 
-      // Get contract instance
       const contract = getContract(signer);
-
-      // Stake native TEA
       const tx = await contract.stake({ value: amount });
       console.log('Stake transaction hash:', tx.hash);
       setLastTxHash(tx.hash);
@@ -58,7 +59,6 @@ const Game = ({ account, provider }) => {
       await tx.wait();
       console.log('Stake transaction confirmed!');
 
-      // Initialize a new game with the staked amount
       const newGame = new FlipGame();
       setGame(newGame);
       setGameState(newGame.getGameState());
@@ -82,7 +82,6 @@ const Game = ({ account, provider }) => {
       console.log('Updated game state:', game.getGameState());
       
       if (result.isGameOver) {
-        // Game over (bust) - no need to interact with contract
         try {
           setIsLoading(true);
           const gameData = {
@@ -123,12 +122,10 @@ const Game = ({ account, provider }) => {
 
       setGameState(game.getGameState());
       
-      // Generate signature for cashout
       const amount = ethers.utils.parseEther(result.finalStake.toString());
       const nonce = Date.now();
       const signature = await generateCashoutSignature(account, amount, nonce);
       
-      // Call contract cashOut
       const contract = getContract(signer);
       const tx = await contract.cashOut(amount, nonce, signature);
       console.log('Cashout transaction hash:', tx.hash);
@@ -137,7 +134,6 @@ const Game = ({ account, provider }) => {
       await tx.wait();
       console.log('Cashout transaction confirmed!');
 
-      // Save to Supabase
       const gameData = {
         result: 'win',
         initial_stake: Number(stakeAmount),
@@ -152,7 +148,6 @@ const Game = ({ account, provider }) => {
       
       if (supabaseError) throw supabaseError;
       
-      // Show success message before resetting
       setError('Successfully cashed out! Start a new game to play again.');
       setHasStaked(false);
     } catch (err) {
@@ -165,99 +160,104 @@ const Game = ({ account, provider }) => {
 
   const startNewGame = useCallback(() => {
     console.log('Starting new game');
-    setHasStaked(false); // Reset staking state to go back to staking screen
+    setHasStaked(false);
   }, []);
 
   if (!account) {
     return (
-      <div className="game-container">
-        <h1>Double or Bust</h1>
-        <div className="error">Please connect your wallet to play</div>
-      </div>
-    );
-  }
-
-  if (!hasStaked) {
-    return (
-      <div className="game-container">
-        <h1>Double or Bust</h1>
-        <div className="stake-form">
-          <label>
-            Stake Amount (0-10 TEA):
-            <input
-              type="number"
-              min="0"
-              max="10"
-              step="0.1"
-              value={stakeAmount}
-              onChange={(e) => setStakeAmount(e.target.value)}
-              disabled={isLoading}
-            />
-          </label>
-          <button onClick={handleStake} disabled={isLoading || !signer}>
-            {!signer ? 'Initializing...' : 'Stake & Play'}
-          </button>
-          {error && <div className="error">{error}</div>}
-          {isLoading && <div className="loading">Processing stake...</div>}
-        </div>
+      <div className="min-h-screen bg-gradient-to-b from-blue-100 to-blue-200 flex items-center justify-center p-4">
+        <Card className="w-full max-w-md">
+          <CardHeader>
+            <CardTitle className="text-center">St. Petersburg Coin Flip</CardTitle>
+            <CardDescription className="text-center">Please connect your wallet to play</CardDescription>
+          </CardHeader>
+        </Card>
       </div>
     );
   }
 
   return (
-    <div className="game-container">
-      <h1>Double or Bust</h1>
-      
-      <div className="game-stats">
-        <p>Current Stake: {gameState.currentStake.toFixed(2)} TEA</p>
-        <p>Flips: {gameState.flipCount} / {MAX_FLIPS}</p>
-      </div>
+    <div className="min-h-screen bg-gradient-to-b from-blue-100 to-blue-200 flex items-center justify-center p-4">
+      <Card className="w-full max-w-md">
+        <CardHeader>
+          <CardTitle className="text-center">St. Petersburg Coin Flip</CardTitle>
+          <CardDescription className="text-center">Flip coins, double your money, but don't lose it all!</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {!hasStaked ? (
+            <div className="space-y-4">
+              <Input
+                type="number"
+                placeholder="Enter your stake (0-10 TEA)"
+                value={stakeAmount}
+                onChange={(e) => setStakeAmount(e.target.value)}
+                disabled={isLoading}
+                min="0"
+                max="10"
+                step="0.1"
+              />
+              <Button 
+                onClick={handleStake} 
+                disabled={isLoading || !signer} 
+                className="w-full"
+              >
+                {!signer ? 'Initializing...' : 'Start Game'}
+              </Button>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <p className="text-lg font-semibold text-center">Current Earnings: {gameState.currentStake.toFixed(2)} TEA</p>
+              <p className="text-md text-center">Flip Count: {gameState.flipCount}/{MAX_FLIPS}</p>
+              
+              <div className="flex justify-center space-x-2 mb-4">
+                {gameState.flips.map((flip, index) => (
+                  <span key={index} className={`inline-flex items-center justify-center w-8 h-8 rounded-full ${flip === 'heads' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'}`}>
+                    {flip === 'heads' ? '2x' : '💥'}
+                  </span>
+                ))}
+              </div>
 
-      <div className="flip-history">
-        {gameState.flips.map((flip, index) => (
-          <span key={index} className={`flip-result ${flip}`}>
-            {flip === 'heads' ? '2x' : '💥'}
-          </span>
-        ))}
-      </div>
+              <div className="flex justify-center space-x-4">
+                <Button 
+                  onClick={handleFlip}
+                  disabled={gameState.isGameOver || gameState.flipCount >= MAX_FLIPS || isLoading}
+                  className="flex-1"
+                >
+                  <CoinsIcon className="mr-2 h-4 w-4" /> Flip Coin
+                </Button>
+                <Button 
+                  onClick={handleCashOut}
+                  disabled={gameState.isGameOver || isLoading}
+                  variant="outline"
+                  className="flex-1"
+                >
+                  Cash Out
+                </Button>
+              </div>
 
-      {error && <div className="error">{error}</div>}
-
-      <div className="game-controls">
-        <button 
-          onClick={handleFlip}
-          disabled={gameState.isGameOver || gameState.flipCount >= MAX_FLIPS || isLoading}
-        >
-          Flip Coin
-        </button>
-        
-        <button 
-          onClick={handleCashOut}
-          disabled={gameState.isGameOver || isLoading}
-        >
-          Cash Out ({gameState.currentStake.toFixed(2)} TEA)
-        </button>
-
-        {gameState.isGameOver && (
-          <button onClick={startNewGame} disabled={isLoading}>
-            New Game
-          </button>
-        )}
-      </div>
-
-      {isLoading && <div className="loading">Processing transaction...</div>}
-      
-      {lastTxHash && (
-        <div className="transaction-info">
-          <p>Last Transaction: <a 
-            href={`https://assam.tea.xyz/tx/${lastTxHash}`} 
-            target="_blank" 
-            rel="noopener noreferrer"
-          >
-            {lastTxHash.slice(0, 6)}...{lastTxHash.slice(-4)}
-          </a></p>
-        </div>
-      )}
+              {gameState.isGameOver && (
+                <Button onClick={startNewGame} disabled={isLoading} className="w-full">
+                  New Game
+                </Button>
+              )}
+            </div>
+          )}
+          
+          {error && (
+            <p className="mt-4 text-center font-medium text-sm text-red-500">{error}</p>
+          )}
+          
+          {isLoading && (
+            <p className="mt-4 text-center font-medium text-sm text-blue-500">Processing transaction...</p>
+          )}
+          
+          {lastTxHash && (
+            <p className="mt-4 text-center text-xs text-gray-500">
+              Transaction Hash: {lastTxHash.slice(0, 6)}...{lastTxHash.slice(-4)}
+            </p>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 };
