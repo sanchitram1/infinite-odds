@@ -3,6 +3,8 @@ import cors from "@fastify/cors";
 import dotenv from "dotenv";
 import { gamesRoutes } from "./routes/games.js";
 import { flipsRoutes } from "./routes/flips.js";
+import { playersRoutes } from "./routes/players.js";
+import { contractRoutes } from "./routes/contract.js";
 
 // Load environment variables
 dotenv.config();
@@ -19,6 +21,8 @@ await fastify.register(cors, {
 // Register routes
 await fastify.register(gamesRoutes);
 await fastify.register(flipsRoutes);
+await fastify.register(playersRoutes);
+await fastify.register(contractRoutes);
 
 // Health check route
 fastify.get("/health", async () => {
