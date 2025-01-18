@@ -85,6 +85,7 @@ const Game = ({ account, provider }) => {
         try {
           setIsLoading(true);
           const gameData = {
+            player_address: account,
             result: 'bust',
             initial_stake: Number(stakeAmount),
             stake: 0,
@@ -96,16 +97,21 @@ const Game = ({ account, provider }) => {
             .from('flips')
             .insert([gameData]);
           
-          if (supabaseError) throw supabaseError;
+          if (supabaseError) {
+            console.error('Database error:', supabaseError);
+            // Don't block the game flow on database error
+            setError('Game ended, but there was an error saving the result.');
+          }
         } catch (err) {
           console.error('Error saving game:', err);
-          setError('Failed to save game result: ' + err.message);
+          // Don't block the game flow on database error
+          setError('Game ended, but there was an error saving the result.');
         } finally {
           setIsLoading(false);
         }
       }
     }
-  }, [game, stakeAmount]);
+  }, [game, stakeAmount, account]);
 
   const handleCashOut = useCallback(async () => {
     try {
@@ -134,7 +140,9 @@ const Game = ({ account, provider }) => {
       await tx.wait();
       console.log('Cashout transaction confirmed!');
 
+      // Save to Supabase
       const gameData = {
+        player_address: account,
         result: 'win',
         initial_stake: Number(stakeAmount),
         stake: result.finalStake,
@@ -146,9 +154,14 @@ const Game = ({ account, provider }) => {
         .from('flips')
         .insert([gameData]);
       
-      if (supabaseError) throw supabaseError;
+      if (supabaseError) {
+        console.error('Database error:', supabaseError);
+        // Still allow the game to complete even if database save fails
+        setError('Successfully cashed out, but there was an error saving the result. Start a new game to play again.');
+      } else {
+        setError('Successfully cashed out! Start a new game to play again.');
+      }
       
-      setError('Successfully cashed out! Start a new game to play again.');
       setHasStaked(false);
     } catch (err) {
       console.error('Error cashing out:', err);
