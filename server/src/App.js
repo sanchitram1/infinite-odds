@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 
 import Game from './components/Game.jsx';
-import { Button } from './components/ui/button';
+import { Button } from './components/ui/button.jsx';
 
 function App() {
   const [account, setAccount] = useState(null);

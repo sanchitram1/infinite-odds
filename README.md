@@ -8,20 +8,20 @@ Fastify, and Solidity.
 
 ```
 infinite-odds/
-├── frontend/             # React frontend application
+├── client/               # React frontend application
 │   ├── public/             # Static assets
 │   ├── src/                # Source code
 │   │   ├── api/              # API client
 │   │   ├── components/       # React components
 │   │   ├── contracts/        # Contract interactions
 │   │   └── utils/            # Utility functions
-├── backend/              # Fastify backend application
+├── server/               # Fastify backend application
 │   ├── src/                # Source code
 │   │   ├── config/            # Configuration
 │   │   ├── routes/           # API routes
 │   │   └── db/               # Database models
 │   └── tests/              # Backend tests
-└── contracts/             # Solidity smart contracts
+└── contracts/            # Solidity smart contracts
     ├── src/                # Contract source code
     └── test/               # Contract tests
 ```
