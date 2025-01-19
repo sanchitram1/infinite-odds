@@ -6,8 +6,8 @@
   "type": "module",
   "scripts": {
     "build": "echo 'No build step needed' && exit 0",
-    "start": "node src/server.js",
-    "dev": "node --watch src/server.js",
+    "start": "node src/local.js",
+    "dev": "node --watch src/local.js",
     "test": "NODE_OPTIONS='--experimental-vm-modules --no-warnings' jest"
   },
   "dependencies": {
