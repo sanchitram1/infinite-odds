@@ -11,7 +11,9 @@ dotenv.config();
 export default async function (fastify, opts) {
   // Register CORS
   await fastify.register(cors, {
-    origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
+    origin: (process.env.CORS_ORIGIN || 'http://localhost:3000').split(','),
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    credentials: true
   });
 
   // Register routes
