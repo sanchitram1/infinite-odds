@@ -72,7 +72,7 @@ const Game = ({ account, provider }) => {
       setError(err.message);
       // If we created a game but staking failed, update game status
       if (currentGameId) {
-        await updateGame(currentGameId, { status: 'failed' });
+        await updateGame(currentGameId, { result: 'failed' });
       }
     } finally {
       setIsLoading(false);
@@ -89,11 +89,9 @@ const Game = ({ account, provider }) => {
       setGameState(game.getGameState());
       
       try {
-        // Record the flip
-        await recordFlips(currentGameId, [result.result]);
-        
         if (result.isGameOver) {
-          // Update game status to bust
+          // Record all flips and update game status on bust
+          await recordFlips(currentGameId, game.flips);
           await updateGame(currentGameId, {
             result: 'bust',
             winnings: 0
@@ -125,8 +123,15 @@ const Game = ({ account, provider }) => {
       
       const amount = ethers.utils.parseEther(result.finalStake.toString());
       
+      // Record all flips before cashout
+      await recordFlips(currentGameId, game.flips);
+      
       // Get cashout data from backend
-      const { tx, signature, nonce } = await requestCashOut(currentGameId, amount.toString());
+      const { tx, signature, nonce } = await requestCashOut(
+        currentGameId,
+        amount.toString(),
+        account
+      );
       
       // Execute transaction
       const transaction = await signer.sendTransaction(tx);

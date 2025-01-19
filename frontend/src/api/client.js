@@ -30,11 +30,12 @@ export async function createGame(playerId, stake) {
   return response.json();
 }
 
-export async function updateGame(gameId, status) {
+export async function updateGame(gameId, updates) {
+  console.log("***** Sending game update:", { gameId, updates });
   const response = await fetch(`${API_URL}/games/${gameId}`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ status }),
+    body: JSON.stringify(updates),
   });
   if (!response.ok) throw new Error("Failed to update game");
   return response.json();
@@ -46,7 +47,7 @@ export async function recordFlips(gameId, flips) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       game_id: gameId,
-      flips: flips.map((flip) => ({ flip })),
+      flips: flips, // Already an array of "heads"/"tails" strings
     }),
   });
   if (!response.ok) throw new Error("Failed to record flips");
@@ -64,11 +65,11 @@ export async function requestStake(gameId, amount) {
   return response.json();
 }
 
-export async function requestCashOut(gameId, amount) {
+export async function requestCashOut(gameId, amount, playerAddress) {
   const response = await fetch(`${API_URL}/cashOut`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ gameId: gameId, amount }),
+    body: JSON.stringify({ gameId, amount, playerAddress }),
   });
   if (!response.ok) throw new Error("Failed to process cash out");
   return response.json();

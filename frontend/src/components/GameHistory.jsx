@@ -33,7 +33,7 @@ export default function GameHistory({ account }) {
           .select(`
             *,
             flips (
-              flip
+              flips
             )
           `)
           .eq('player_id', playerId) // Using numeric player_id

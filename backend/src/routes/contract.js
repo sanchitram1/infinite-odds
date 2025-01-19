@@ -46,16 +46,22 @@ export async function contractRoutes(fastify) {
       schema: {
         body: {
           type: "object",
-          required: ["gameId", "amount"],
+          required: ["gameId", "amount", "playerAddress"],
           properties: {
             gameId: { type: "number" },
             amount: { type: "string" }, // Amount in wei as string
+            playerAddress: { type: "string", pattern: "^0x[a-fA-F0-9]{40}$" },
           },
         },
       },
     },
     async (request, reply) => {
-      const { gameId, amount } = request.body;
+      const { gameId, amount, playerAddress } = request.body;
+      console.log("***** Processing cashout:", {
+        gameId,
+        amount,
+        playerAddress,
+      });
 
       try {
         // Generate nonce
@@ -69,6 +75,8 @@ export async function contractRoutes(fastify) {
           verifyingContract: contract.address,
         };
 
+        console.log("***** Domain config:", domain);
+
         const types = {
           CashOut: [
             { name: "player", type: "address" },
@@ -78,10 +86,12 @@ export async function contractRoutes(fastify) {
         };
 
         const value = {
-          player: request.body.playerAddress,
+          player: playerAddress,
           amount,
           nonce,
         };
+
+        console.log("***** Signing data:", { types, value });
 
         // Sign the message
         const signature = await contract.signer._signTypedData(
@@ -89,6 +99,8 @@ export async function contractRoutes(fastify) {
           types,
           value
         );
+
+        console.log("***** Generated signature:", signature);
 
         // Create the transaction object
         const tx = {
@@ -100,20 +112,18 @@ export async function contractRoutes(fastify) {
           ]),
         };
 
-        // Get gas estimate
-        const gasEstimate = await contract.provider.estimateGas(tx);
-        tx.gasLimit = gasEstimate.mul(120).div(100); // Add 20% buffer
-
         return reply.send({
           tx,
           signature,
           nonce,
         });
       } catch (error) {
+        console.error("***** Cashout error:", error);
         fastify.log.error(error);
         return reply.code(500).send({
           error: "Failed to process cashout",
           details: error.message,
+          stack: error.stack,
         });
       }
     }

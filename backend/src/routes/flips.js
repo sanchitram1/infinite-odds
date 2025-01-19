@@ -10,19 +10,9 @@ export async function flipsRoutes(fastify) {
           required: ["game_id", "flips"],
           properties: {
             game_id: { type: "number" },
-            flips: {
+            flip: {
               type: "array",
-              minItems: 1,
-              items: {
-                type: "object",
-                required: ["flip"],
-                properties: {
-                  flip: {
-                    type: "string",
-                    enum: ["heads", "tails"],
-                  },
-                },
-              },
+              items: { type: "string", enum: ["heads", "tails"] },
             },
           },
         },
@@ -30,20 +20,27 @@ export async function flipsRoutes(fastify) {
     },
     async (request, reply) => {
       const { game_id, flips } = request.body;
+      console.log("***** flips", flips);
 
       try {
-        // Add game_id to each flip
-        const flipsWithGameId = flips.map((flip) => ({
-          ...flip,
+        // Create flip object with game_id and flips array
+        const flipsToInsert = {
           game_id,
-        }));
+          flips,
+        };
+        console.log("***** flipsToInsert", flipsToInsert);
 
         const { data, error } = await supabase
           .from("flips")
-          .insert(flipsWithGameId)
+          .insert(flipsToInsert)
           .select();
 
-        if (error) throw error;
+        console.log("***** data", data);
+
+        if (error) {
+          console.error("Error inserting flips:", error);
+          throw error;
+        }
 
         return reply.code(201).send(data);
       } catch (error) {

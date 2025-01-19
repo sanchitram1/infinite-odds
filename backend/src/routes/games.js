@@ -25,6 +25,7 @@ export async function gamesRoutes(fastify) {
     },
     async (request, reply) => {
       const { body } = request;
+      console.log("***** Creating game with data:", body);
 
       // Validate winnings for cash-out
       if (body.result === "cash-out" && typeof body.winnings !== "number") {
@@ -40,8 +41,12 @@ export async function gamesRoutes(fastify) {
           .select()
           .single();
 
-        if (error) throw error;
+        if (error) {
+          console.error("***** Error creating game:", error);
+          throw error;
+        }
 
+        console.log("***** Successfully created game:", data);
         return reply.code(201).send(data);
       } catch (error) {
         fastify.log.error(error);
@@ -78,6 +83,7 @@ export async function gamesRoutes(fastify) {
     async (request, reply) => {
       const { id } = request.params;
       const { body } = request;
+      console.log("***** Updating game:", { id, updates: body });
 
       // Validate winnings for cash-out
       if (body.result === "cash-out" && typeof body.winnings !== "number") {
@@ -94,11 +100,16 @@ export async function gamesRoutes(fastify) {
           .select()
           .single();
 
-        if (error) throw error;
+        if (error) {
+          console.error("***** Error updating game:", error);
+          throw error;
+        }
         if (!data) {
+          console.log("***** Game not found:", id);
           return reply.code(404).send({ error: "Game not found" });
         }
 
+        console.log("***** Successfully updated game:", data);
         return reply.send(data);
       } catch (error) {
         fastify.log.error(error);
