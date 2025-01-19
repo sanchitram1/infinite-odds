@@ -8,19 +8,22 @@ Fastify, and Solidity.
 
 ```
 infinite-odds/
-├── client/               # React frontend application
+├── client/               # React client application
 │   ├── public/             # Static assets
 │   ├── src/                # Source code
 │   │   ├── api/              # API client
 │   │   ├── components/       # React components
 │   │   ├── contracts/        # Contract interactions
 │   │   └── utils/            # Utility functions
-├── server/               # Fastify backend application
+├── server/               # Fastify server application
+│   ├── api/                # Serverless function
+│   │   └── serverless.js     # Serverless function that Vercel uses
 │   ├── src/                # Source code
 │   │   ├── config/            # Configuration
 │   │   ├── routes/           # API routes
-│   │   └── db/               # Database models
-│   └── tests/              # Backend tests
+│   │   └── server.js         # Server entry point
+│   │   └── local.js          # Server entry point for local development
+│   └── tests/              # server tests
 └── contracts/            # Solidity smart contracts
     ├── src/                # Contract source code
     └── test/               # Contract tests
@@ -32,13 +35,13 @@ infinite-odds/
 2. Install dependencies & copy .env files
 
   ```bash
-  # Frontend
-  cd frontend
+  # client
+  cd client
   npm install
   cp .env.example .env
 
-  # Backend
-  cd ../backend
+  # server
+  cd ../server
   npm install
   cp .env.example .env
 
@@ -48,15 +51,20 @@ infinite-odds/
   cp .env.example .env
   ```
 
-3. Start the frontend and backend services
+3. Start the client and server services
 
   ```bash
-  cd frontend
+  cd client
   npm run start  # this will open a browser window
 
-  cd backend
+  cd server
   npm run start
   ```
+
+> [!NOTE] 
+> 
+> Optionally, you can run the server in dev mode using `vercel dev`, which simulates 
+> the serverless function.
 
 > [!NOTE]
 > 
@@ -65,12 +73,12 @@ infinite-odds/
 
 ## Testing
 
-Currently, tests are only defined for the backend and the smart contract. Coverage isn't
+Currently, tests are only defined for the server and the smart contract. Coverage isn't
 great, but always open to more. 
 
 ```bash
-# Backend tests
-cd backend
+# server tests
+cd server
 npm run test
 
 # Smart contract tests
@@ -80,7 +88,7 @@ forge test
 
 ## Deployment
 
-### Frontend (Vercel)
+### client (Vercel)
 
 1. Push your code to GitHub
 2. Create a new project on Vercel
@@ -92,36 +100,41 @@ forge test
    - Output Directory: `build`
    - Install Command: `npm install`
 
-### Backend (Vercel)
+### server (Vercel)
 
-1. Create a `vercel.json` in the backend directory:
+1. Create a `vercel.json` in the server directory:
 
-   ```json
-   {
-     "version": 2,
-     "builds": [
-       {
-         "src": "src/index.js",
-         "use": "@vercel/node"
-       }
-     ],
-     "routes": [
-       {
-         "src": "/(.*)",
-         "dest": "src/index.js"
-       }
-     ]
-   }
-   ```
+  ```json
+  {
+    "version": 2,
+    "builds": [
+      {
+        "src": "api/serverless.js",
+        "use": "@vercel/node"
+      }
+    ],
+    "routes": [
+      {
+        "src": "/(.*)",
+        "dest": "api/serverless.js"
+      }
+    ]
+  }
+  ```
 
 2. Deploy using Vercel CLI:
 
    ```bash
-   cd backend
+   cd server
    vercel
    ```
 
-3. Configure environment variables in Vercel dashboard
+> [!IMPORTANT]
+> 
+> I used different projects for the client and server, so had to select `server` as the 
+> root directory.
+
+3. Configure environment variables in Vercel dashboard or using `vercel env add ENV_VAR`
 
 ### Smart Contracts
 
@@ -134,16 +147,30 @@ forge test
      --private-key $DEPLOYER_PRIVATE_KEY
    ```
 
-2. Update the contract address in your backend environment variables
+2. Update the contract address in your server environment variables
 
-## Contributing
+# Contributing
 
-1. Fork the repository
-2. Create a feature branch
-3. Commit your changes
-4. Push to the branch
-5. Create a Pull Request
+Any PRs are welcome, but here's my personal list of stuff I'd like to see:
 
-## License
+## General
 
-MIT
+- testing
+
+## UI
+
+- re-render game history on end
+- better focus on the current game elsewhere (use v0 for ideas)
+- history should be expandable
+- new game should reset all error messages
+- display / hyperlink txn hashes
+- green font for successful cashOut
+
+## Backend
+
+- store txn hashes?
+- securely trigger `cashOut`
+
+## Contract
+
+- cashOut transactions result in token transfers, but not in the tea explorer...why?
