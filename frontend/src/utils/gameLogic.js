@@ -1,10 +1,8 @@
 // Game constants from environment
-export const MAX_FLIPS = parseInt(process.env.REACT_APP_MAX_FLIPS || "10");
-export const MAX_STAKE = parseFloat(process.env.REACT_APP_MAX_STAKE || "10");
-export const MIN_STAKE = parseFloat(process.env.REACT_APP_MIN_STAKE || "0.1");
-export const INITIAL_STAKE = parseFloat(
-  process.env.REACT_APP_INITIAL_STAKE || "1"
-);
+export const MAX_FLIPS = parseInt(process.env.REACT_APP_MAX_FLIPS || '10');
+export const MAX_STAKE = parseFloat(process.env.REACT_APP_MAX_STAKE || '10');
+export const MIN_STAKE = parseFloat(process.env.REACT_APP_MIN_STAKE || '0.1');
+export const INITIAL_STAKE = parseFloat(process.env.REACT_APP_INITIAL_STAKE || '1');
 
 export class FlipGame {
   constructor(stake = INITIAL_STAKE) {
@@ -18,10 +16,10 @@ export class FlipGame {
       return null;
     }
 
-    const result = Math.random() < 0.5 ? "heads" : "tails";
+    const result = Math.random() < 0.5 ? 'heads' : 'tails';
     this.flips.push(result);
 
-    if (result === "heads") {
+    if (result === 'heads') {
       this.stake *= 2;
     } else {
       this.isGameOver = true;

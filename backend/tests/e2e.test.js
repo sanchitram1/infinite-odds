@@ -1,15 +1,16 @@
-import { jest } from "@jest/globals";
-import Fastify from "fastify";
-import { gamesRoutes } from "../src/routes/games.js";
-import { flipsRoutes } from "../src/routes/flips.js";
-import { playersRoutes } from "../src/routes/players.js";
-import { contractRoutes } from "../src/routes/contract.js";
+import { jest } from '@jest/globals';
+import Fastify from 'fastify';
 
-describe("End-to-End Game Flow", () => {
+import { contractRoutes } from '../src/routes/contract.js';
+import { flipsRoutes } from '../src/routes/flips.js';
+import { gamesRoutes } from '../src/routes/games.js';
+import { playersRoutes } from '../src/routes/players.js';
+
+describe('End-to-End Game Flow', () => {
   let fastify;
   let playerId;
   let gameId;
-  const testAddress = "0x1234567890123456789012345678901234567890";
+  const testAddress = '0x1234567890123456789012345678901234567890';
 
   beforeEach(async () => {
     fastify = Fastify();
@@ -20,8 +21,8 @@ describe("End-to-End Game Flow", () => {
 
     // Create a player first
     const playerResponse = await fastify.inject({
-      method: "POST",
-      url: "/player",
+      method: 'POST',
+      url: '/player',
       payload: { address: testAddress },
     });
     playerId = JSON.parse(playerResponse.payload).id;
@@ -31,16 +32,16 @@ describe("End-to-End Game Flow", () => {
     fastify.close();
   });
 
-  test("Complete game flow: create game → flip coins → cash out", async () => {
+  test('Complete game flow: create game → flip coins → cash out', async () => {
     // 1. Create a new game
     const createGameResponse = await fastify.inject({
-      method: "POST",
-      url: "/games",
+      method: 'POST',
+      url: '/games',
       payload: {
         player_id: playerId,
         stake: 1.0,
-        result: "in-progress",
-        stake_txn_hash: "0x123",
+        result: 'in-progress',
+        stake_txn_hash: '0x123',
       },
     });
 
@@ -49,11 +50,11 @@ describe("End-to-End Game Flow", () => {
 
     // 2. Record some flips (all heads for testing)
     const flipsResponse = await fastify.inject({
-      method: "POST",
-      url: "/flips",
+      method: 'POST',
+      url: '/flips',
       payload: {
         game_id: gameId,
-        flips: [{ flip: "heads" }, { flip: "heads" }],
+        flips: [{ flip: 'heads' }, { flip: 'heads' }],
       },
     });
 
@@ -62,10 +63,10 @@ describe("End-to-End Game Flow", () => {
 
     // 3. Request cashout signature
     const cashoutResponse = await fastify.inject({
-      method: "POST",
-      url: "/cashOut",
+      method: 'POST',
+      url: '/cashOut',
       payload: {
-        amount: "4000000000000000000", // 4 ETH (1 ETH × 2 × 2)
+        amount: '4000000000000000000', // 4 ETH (1 ETH × 2 × 2)
         playerAddress: testAddress,
       },
     });
@@ -77,18 +78,18 @@ describe("End-to-End Game Flow", () => {
 
     // 4. Update game status to cashed out
     const updateGameResponse = await fastify.inject({
-      method: "PATCH",
+      method: 'PATCH',
       url: `/games/${gameId}`,
       payload: {
-        result: "cash-out",
+        result: 'cash-out',
         winnings: 4.0,
-        cash_out_txn_hash: "0x456",
+        cash_out_txn_hash: '0x456',
       },
     });
 
     expect(updateGameResponse.statusCode).toBe(200);
     expect(JSON.parse(updateGameResponse.payload)).toMatchObject({
-      result: "cash-out",
+      result: 'cash-out',
       winnings: 4.0,
     });
   });

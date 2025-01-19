@@ -4,12 +4,16 @@
   "description": "infinite odds game",
   "main": "index.js",
   "scripts": {
+    "format": "prettier --write .",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "dependencies": {
-    "dotenv": "^16.4.7"
+  "devDependencies": {
+    "dotenv": "^16.4.7",
+    "prettier": "^3.2.1",
+    "prettier-plugin-tailwindcss": "^0.5.10",
+    "@trivago/prettier-plugin-sort-imports": "^4.0.0"
   }
 }

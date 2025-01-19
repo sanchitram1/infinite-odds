@@ -1,8 +1,9 @@
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import { useState, useEffect } from "react";
-import Game from "./components/Game.jsx";
-import { ethers } from "ethers";
-import { Button } from "./components/ui/button";
+import { ethers } from 'ethers';
+import { useState, useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+
+import Game from './components/Game.jsx';
+import { Button } from './components/ui/button';
 
 function App() {
   const [account, setAccount] = useState(null);
@@ -18,13 +19,13 @@ function App() {
 
   const connectWallet = async () => {
     try {
-      if (!window.ethereum) throw new Error("Please install MetaMask");
+      if (!window.ethereum) throw new Error('Please install MetaMask');
       const accounts = await window.ethereum.request({
-        method: "eth_requestAccounts",
+        method: 'eth_requestAccounts',
       });
       setAccount(accounts[0]);
     } catch (error) {
-      console.error("Error connecting wallet:", error);
+      console.error('Error connecting wallet:', error);
     }
   };
 
@@ -35,7 +36,7 @@ function App() {
         const balance = await provider.getBalance(account);
         setBalance(ethers.utils.formatEther(balance));
       } catch (error) {
-        console.error("Error fetching balance:", error);
+        console.error('Error fetching balance:', error);
       }
     };
 
@@ -57,19 +58,14 @@ function App() {
                   Connected: {account.slice(0, 6)}...{account.slice(-4)}
                 </p>
                 {balance && (
-                  <p className="text-sm text-gray-600">
-                    TEA Balance: {Number(balance).toFixed(4)}
-                  </p>
+                  <p className="text-sm text-gray-600">TEA Balance: {Number(balance).toFixed(4)}</p>
                 )}
               </div>
             )}
           </div>
 
           <Routes>
-            <Route
-              path="/"
-              element={<Game account={account} provider={provider} />}
-            />
+            <Route path="/" element={<Game account={account} provider={provider} />} />
           </Routes>
         </div>
       </div>

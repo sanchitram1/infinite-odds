@@ -1,11 +1,12 @@
-import { useEffect, useState } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card"
-import { supabase } from '../supabaseClient'
-import { getPlayer } from '../api/client'
+import { useEffect, useState } from 'react';
+
+import { getPlayer } from '../api/client';
+import { supabase } from '../supabaseClient';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 
 export default function GameHistory({ account }) {
-  const [gameHistory, setGameHistory] = useState([])
-  const [playerId, setPlayerId] = useState(null)
+  const [gameHistory, setGameHistory] = useState([]);
+  const [playerId, setPlayerId] = useState(null);
 
   // First get the player ID
   useEffect(() => {
@@ -25,30 +26,32 @@ export default function GameHistory({ account }) {
   useEffect(() => {
     async function loadGameHistory() {
       if (!playerId) return;
-      
+
       try {
         // Read-only query to get game history
         const { data, error } = await supabase
           .from('games')
-          .select(`
+          .select(
+            `
             *,
             flips (
               flips
             )
-          `)
+          `,
+          )
           .eq('player_id', playerId) // Using numeric player_id
           .order('created_at', { ascending: false })
-          .limit(10)
+          .limit(10);
 
-        if (error) throw error
-        setGameHistory(data || [])
+        if (error) throw error;
+        setGameHistory(data || []);
       } catch (error) {
-        console.error('Error loading game history:', error)
+        console.error('Error loading game history:', error);
       }
     }
 
-    loadGameHistory()
-  }, [playerId]) // Depend on playerId instead of account
+    loadGameHistory();
+  }, [playerId]); // Depend on playerId instead of account
 
   return (
     <Card className="w-full max-w-md mt-4">
@@ -68,7 +71,7 @@ export default function GameHistory({ account }) {
                 <p>Result: {game.result}</p>
                 <p>Flips: {game.flips?.length || 0}</p>
                 <p className="text-sm text-gray-500">
-                  History: {game.flips?.map(f => f.flip === 'heads' ? 'H' : 'T').join('')}
+                  History: {game.flips?.map((f) => (f.flip === 'heads' ? 'H' : 'T')).join('')}
                 </p>
               </li>
             ))}
@@ -76,5 +79,5 @@ export default function GameHistory({ account }) {
         )}
       </CardContent>
     </Card>
-  )
-} 
+  );
+}

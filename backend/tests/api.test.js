@@ -1,18 +1,19 @@
-import { test } from "tap";
-import { build } from "../src/app.js";
-import { ethers } from "ethers";
+import { ethers } from 'ethers';
+import { test } from 'tap';
+
+import { build } from '../src/app.js';
 
 // Test data
-const TEST_ADDRESS = "0x742d35Cc6634C0532925a3b844Bc454e4438f44e";
-const TEST_STAKE = "1.0";
+const TEST_ADDRESS = '0x742d35Cc6634C0532925a3b844Bc454e4438f44e';
+const TEST_STAKE = '1.0';
 
-test("API endpoints", async (t) => {
+test('API endpoints', async (t) => {
   const app = await build();
 
-  await t.test("POST /player - create new player", async (t) => {
+  await t.test('POST /player - create new player', async (t) => {
     const response = await app.inject({
-      method: "POST",
-      url: "/player",
+      method: 'POST',
+      url: '/player',
       payload: { address: TEST_ADDRESS },
     });
     t.equal(response.statusCode, 201);
@@ -21,9 +22,9 @@ test("API endpoints", async (t) => {
     t.equal(player.address, TEST_ADDRESS);
   });
 
-  await t.test("GET /player - get player info", async (t) => {
+  await t.test('GET /player - get player info', async (t) => {
     const response = await app.inject({
-      method: "GET",
+      method: 'GET',
       url: `/player?address=${TEST_ADDRESS}`,
     });
     t.equal(response.statusCode, 200);
@@ -32,10 +33,10 @@ test("API endpoints", async (t) => {
   });
 
   let gameId;
-  await t.test("POST /games - create new game", async (t) => {
+  await t.test('POST /games - create new game', async (t) => {
     const response = await app.inject({
-      method: "POST",
-      url: "/games",
+      method: 'POST',
+      url: '/games',
       payload: {
         playerId: 1, // Assuming first player has ID 1
         stake: TEST_STAKE,
@@ -47,13 +48,13 @@ test("API endpoints", async (t) => {
     gameId = game.id;
   });
 
-  await t.test("POST /flips - record flips", async (t) => {
+  await t.test('POST /flips - record flips', async (t) => {
     const response = await app.inject({
-      method: "POST",
-      url: "/flips",
+      method: 'POST',
+      url: '/flips',
       payload: {
         gameId,
-        flips: ["heads", "tails", "heads"],
+        flips: ['heads', 'tails', 'heads'],
       },
     });
     t.equal(response.statusCode, 201);
@@ -61,26 +62,26 @@ test("API endpoints", async (t) => {
     t.ok(result.success);
   });
 
-  await t.test("PATCH /games/:id - update game status", async (t) => {
+  await t.test('PATCH /games/:id - update game status', async (t) => {
     const response = await app.inject({
-      method: "PATCH",
+      method: 'PATCH',
       url: `/games/${gameId}`,
       payload: {
-        status: "completed",
+        status: 'completed',
       },
     });
     t.equal(response.statusCode, 200);
     const game = JSON.parse(response.payload);
-    t.equal(game.status, "completed");
+    t.equal(game.status, 'completed');
   });
 
-  await t.test("POST /cashOut - request cash out", async (t) => {
+  await t.test('POST /cashOut - request cash out', async (t) => {
     const response = await app.inject({
-      method: "POST",
-      url: "/cashOut",
+      method: 'POST',
+      url: '/cashOut',
       payload: {
         gameId,
-        amount: ethers.utils.parseEther("2.0").toString(), // Double the stake
+        amount: ethers.utils.parseEther('2.0').toString(), // Double the stake
       },
     });
     t.equal(response.statusCode, 200);
@@ -90,13 +91,13 @@ test("API endpoints", async (t) => {
 });
 
 // End-to-end game flow test
-test("End-to-end game flow", async (t) => {
+test('End-to-end game flow', async (t) => {
   const app = await build();
 
   // 1. Create player
   const playerResponse = await app.inject({
-    method: "POST",
-    url: "/player",
+    method: 'POST',
+    url: '/player',
     payload: { address: TEST_ADDRESS },
   });
   t.equal(playerResponse.statusCode, 201);
@@ -104,8 +105,8 @@ test("End-to-end game flow", async (t) => {
 
   // 2. Create game
   const gameResponse = await app.inject({
-    method: "POST",
-    url: "/games",
+    method: 'POST',
+    url: '/games',
     payload: {
       playerId: player.id,
       stake: TEST_STAKE,
@@ -116,32 +117,32 @@ test("End-to-end game flow", async (t) => {
 
   // 3. Record flips
   const flipsResponse = await app.inject({
-    method: "POST",
-    url: "/flips",
+    method: 'POST',
+    url: '/flips',
     payload: {
       gameId: game.id,
-      flips: ["heads", "heads", "tails"],
+      flips: ['heads', 'heads', 'tails'],
     },
   });
   t.equal(flipsResponse.statusCode, 201);
 
   // 4. Update game status
   const updateResponse = await app.inject({
-    method: "PATCH",
+    method: 'PATCH',
     url: `/games/${game.id}`,
     payload: {
-      status: "completed",
+      status: 'completed',
     },
   });
   t.equal(updateResponse.statusCode, 200);
 
   // 5. Cash out
   const cashOutResponse = await app.inject({
-    method: "POST",
-    url: "/cashOut",
+    method: 'POST',
+    url: '/cashOut',
     payload: {
       gameId: game.id,
-      amount: ethers.utils.parseEther("2.0").toString(),
+      amount: ethers.utils.parseEther('2.0').toString(),
     },
   });
   t.equal(cashOutResponse.statusCode, 200);

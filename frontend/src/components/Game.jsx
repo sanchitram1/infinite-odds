@@ -1,13 +1,21 @@
-import React, { useState, useCallback, useEffect } from 'react';
-import { FlipGame, MAX_FLIPS, MAX_STAKE, MIN_STAKE } from '../utils/gameLogic';
 import { ethers } from 'ethers';
 import { CoinsIcon } from 'lucide-react';
-import { Button } from './ui/button';
-import { Input } from './ui/input';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
-import LoadingScreen from './LoadingScreen';
+import React, { useState, useCallback, useEffect } from 'react';
+
+import {
+  createPlayer,
+  createGame,
+  updateGame,
+  recordFlips,
+  requestCashOut,
+  requestStake,
+} from '../api/client';
+import { FlipGame, MAX_FLIPS, MAX_STAKE, MIN_STAKE } from '../utils/gameLogic';
 import GameHistory from './GameHistory';
-import { createPlayer, createGame, updateGame, recordFlips, requestCashOut, requestStake } from '../api/client';
+import LoadingScreen from './LoadingScreen';
+import { Button } from './ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
+import { Input } from './ui/input';
 
 const Game = ({ account, provider }) => {
   const [game, setGame] = useState(() => new FlipGame());
@@ -26,11 +34,11 @@ const Game = ({ account, provider }) => {
     if (provider && account) {
       const signer = provider.getSigner();
       setSigner(signer);
-      
+
       // Create or get player
       createPlayer(account)
-        .then(player => setPlayerId(player.id))
-        .catch(err => console.error('Error creating/getting player:', err));
+        .then((player) => setPlayerId(player.id))
+        .catch((err) => console.error('Error creating/getting player:', err));
     }
   }, [provider, account]);
 
@@ -45,8 +53,10 @@ const Game = ({ account, provider }) => {
       if (!playerId) throw new Error('Player setup incomplete. Please try again.');
 
       const amount = ethers.utils.parseEther(stakeAmount);
-      if (amount.lte(ethers.utils.parseEther(MIN_STAKE.toString())) || 
-          amount.gt(ethers.utils.parseEther(MAX_STAKE.toString()))) {
+      if (
+        amount.lte(ethers.utils.parseEther(MIN_STAKE.toString())) ||
+        amount.gt(ethers.utils.parseEther(MAX_STAKE.toString()))
+      ) {
         throw new Error(`Stake amount must be between ${MIN_STAKE} and ${MAX_STAKE} TEA`);
       }
 
@@ -84,17 +94,17 @@ const Game = ({ account, provider }) => {
 
     setError(null);
     const result = game.flip();
-    
+
     if (result) {
       setGameState(game.getGameState());
-      
+
       try {
         if (result.isGameOver) {
           // Record all flips and update game status on bust
           await recordFlips(currentGameId, game.flips);
           await updateGame(currentGameId, {
             result: 'bust',
-            winnings: 0
+            winnings: 0,
           });
         }
       } catch (err) {
@@ -111,7 +121,7 @@ const Game = ({ account, provider }) => {
       setError(null);
       setIsLoading(true);
       setLastTxHash(null);
-      
+
       if (!signer || !account) {
         throw new Error('Please connect your wallet first');
       }
@@ -120,19 +130,19 @@ const Game = ({ account, provider }) => {
       if (!result) return;
 
       setGameState(game.getGameState());
-      
+
       const amount = ethers.utils.parseEther(result.finalStake.toString());
-      
+
       // Record all flips before cashout
       await recordFlips(currentGameId, game.flips);
-      
+
       // Get cashout data from backend
       const { tx, signature, nonce } = await requestCashOut(
         currentGameId,
         amount.toString(),
-        account
+        account,
       );
-      
+
       // Execute transaction
       const transaction = await signer.sendTransaction(tx);
       setLastTxHash(transaction.hash);
@@ -141,7 +151,7 @@ const Game = ({ account, provider }) => {
       // Update game status
       await updateGame(currentGameId, {
         result: 'cash-out',
-        winnings: result.finalStake
+        winnings: result.finalStake,
       });
 
       setError('Successfully cashed out! Start a new game to play again.');
@@ -160,7 +170,11 @@ const Game = ({ account, provider }) => {
   }, []);
 
   if (isLoading) {
-    return <LoadingScreen message={lastTxHash ? `Transaction pending: ${lastTxHash}` : 'Processing...'} />;
+    return (
+      <LoadingScreen
+        message={lastTxHash ? `Transaction pending: ${lastTxHash}` : 'Processing...'}
+      />
+    );
   }
 
   if (!account) {
@@ -169,7 +183,9 @@ const Game = ({ account, provider }) => {
         <Card className="w-full max-w-md">
           <CardHeader>
             <CardTitle className="text-center">St. Petersburg Coin Flip</CardTitle>
-            <CardDescription className="text-center">Please connect your wallet to play</CardDescription>
+            <CardDescription className="text-center">
+              Please connect your wallet to play
+            </CardDescription>
           </CardHeader>
         </Card>
       </div>
@@ -181,7 +197,9 @@ const Game = ({ account, provider }) => {
       <Card className="w-full max-w-md">
         <CardHeader>
           <CardTitle className="text-center">St. Petersburg Coin Flip</CardTitle>
-          <CardDescription className="text-center">Flip coins, double your money, but don't lose it all!</CardDescription>
+          <CardDescription className="text-center">
+            Flip coins, double your money, but don't lose it all!
+          </CardDescription>
         </CardHeader>
         <CardContent>
           {!hasStaked ? (
@@ -196,36 +214,39 @@ const Game = ({ account, provider }) => {
                 max="10"
                 step="0.1"
               />
-              <Button 
-                onClick={handleStake} 
-                disabled={isLoading || !signer} 
-                className="w-full"
-              >
+              <Button onClick={handleStake} disabled={isLoading || !signer} className="w-full">
                 {!signer ? 'Initializing...' : 'Start Game'}
               </Button>
             </div>
           ) : (
             <div className="space-y-4">
-              <p className="text-lg font-semibold text-center">Current Earnings: {gameState.currentStake.toFixed(2)} TEA</p>
-              <p className="text-md text-center">Flip Count: {gameState.flipCount}/{MAX_FLIPS}</p>
-              
+              <p className="text-lg font-semibold text-center">
+                Current Earnings: {gameState.currentStake.toFixed(2)} TEA
+              </p>
+              <p className="text-md text-center">
+                Flip Count: {gameState.flipCount}/{MAX_FLIPS}
+              </p>
+
               <div className="flex justify-center space-x-2 mb-4">
                 {gameState.flips.map((flip, index) => (
-                  <span key={index} className={`inline-flex items-center justify-center w-8 h-8 rounded-full ${flip === 'heads' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'}`}>
+                  <span
+                    key={index}
+                    className={`inline-flex items-center justify-center w-8 h-8 rounded-full ${flip === 'heads' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'}`}
+                  >
                     {flip === 'heads' ? '2x' : '💥'}
                   </span>
                 ))}
               </div>
 
               <div className="flex justify-center space-x-4">
-                <Button 
+                <Button
                   onClick={handleFlip}
                   disabled={gameState.isGameOver || gameState.flipCount >= MAX_FLIPS || isLoading}
                   className="flex-1"
                 >
                   <CoinsIcon className="mr-2 h-4 w-4" /> Flip Coin
                 </Button>
-                <Button 
+                <Button
                   onClick={handleCashOut}
                   disabled={gameState.isGameOver || isLoading}
                   variant="outline"
@@ -242,15 +263,15 @@ const Game = ({ account, provider }) => {
               )}
             </div>
           )}
-          
-          {error && (
-            <p className="mt-4 text-center font-medium text-sm text-red-500">{error}</p>
-          )}
-          
+
+          {error && <p className="mt-4 text-center font-medium text-sm text-red-500">{error}</p>}
+
           {isLoading && (
-            <p className="mt-4 text-center font-medium text-sm text-blue-500">Processing transaction...</p>
+            <p className="mt-4 text-center font-medium text-sm text-blue-500">
+              Processing transaction...
+            </p>
           )}
-          
+
           {lastTxHash && (
             <p className="mt-4 text-center text-xs text-gray-500">
               Transaction Hash: {lastTxHash.slice(0, 6)}...{lastTxHash.slice(-4)}
@@ -263,4 +284,4 @@ const Game = ({ account, provider }) => {
   );
 };
 
-export default Game; 
+export default Game;

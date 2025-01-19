@@ -1,8 +1,8 @@
 export default {
   transform: {},
-  testEnvironment: "node",
+  testEnvironment: 'node',
   verbose: true,
   moduleNameMapper: {
-    "^(\\.{1,2}/.*)\\.js$": "$1",
+    '^(\\.{1,2}/.*)\\.js$': '$1',
   },
 };

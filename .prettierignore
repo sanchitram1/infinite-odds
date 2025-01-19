@@ -1,0 +1,9 @@
+.DS_Store
+node_modules
+.env
+.env.*
+src/generated/*
+.esbuild/*
+*-lock.yaml
+*-lock.json
+contracts/*
