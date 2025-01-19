@@ -21,16 +21,12 @@ export async function contractRoutes(fastify) {
       const { gameId, amount } = request.body;
 
       try {
-        // Create the transaction object
+        // Just create the transaction object without gas estimation
         const tx = {
           to: contract.address,
           value: amount,
           data: contract.interface.encodeFunctionData("stake", []),
         };
-
-        // Get gas estimate
-        const gasEstimate = await contract.provider.estimateGas(tx);
-        tx.gasLimit = gasEstimate.mul(120).div(100); // Add 20% buffer
 
         return reply.send({ tx });
       } catch (error) {

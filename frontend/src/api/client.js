@@ -53,11 +53,12 @@ export async function recordFlips(gameId, flips) {
   return response.json();
 }
 
+// notice that the contract calls expect gameId, not game_id!
 export async function requestStake(gameId, amount) {
   const response = await fetch(`${API_URL}/stake`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ game_id: gameId, amount }),
+    body: JSON.stringify({ gameId: gameId, amount }),
   });
   if (!response.ok) throw new Error("Failed to process stake");
   return response.json();
@@ -67,7 +68,7 @@ export async function requestCashOut(gameId, amount) {
   const response = await fetch(`${API_URL}/cashOut`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ game_id: gameId, amount }),
+    body: JSON.stringify({ gameId: gameId, amount }),
   });
   if (!response.ok) throw new Error("Failed to process cash out");
   return response.json();
