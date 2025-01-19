@@ -1,86 +1,77 @@
 # Infinite Odds Game
 
-A decentralized coin flip game built with React, Fastify, and Solidity.
+An illustration of the 
+[St. Petersburg Paradox](https://www.economicsdiscussion.net/essays/economics/st-petersburg-paradox-and-bernoulus-hypothesis-with-diagram/1425) built with React, 
+Fastify, and Solidity.
 
 ## Project Structure
 
 ```
 infinite-odds/
-├── frontend/                 # React frontend application
-│   ├── public/              # Static assets
-│   ├── src/                 # Source code
-│   │   ├── api/            # API client
-│   │   ├── components/     # React components
-│   │   ├── contracts/      # Contract interactions
-│   │   └── utils/          # Utility functions
-├── backend/                 # Fastify backend application
+├── frontend/             # React frontend application
+│   ├── public/             # Static assets
 │   ├── src/                # Source code
-│   │   ├── config/        # Configuration
-│   │   ├── routes/        # API routes
-│   │   └── db/           # Database models
-│   └── tests/             # Backend tests
-└── contracts/              # Solidity smart contracts
-    ├── src/               # Contract source code
-    └── test/             # Contract tests
+│   │   ├── api/              # API client
+│   │   ├── components/       # React components
+│   │   ├── contracts/        # Contract interactions
+│   │   └── utils/            # Utility functions
+├── backend/              # Fastify backend application
+│   ├── src/                # Source code
+│   │   ├── config/            # Configuration
+│   │   ├── routes/           # API routes
+│   │   └── db/               # Database models
+│   └── tests/              # Backend tests
+└── contracts/             # Solidity smart contracts
+    ├── src/                # Contract source code
+    └── test/               # Contract tests
 ```
 
-## Development Setup
+## Getting Started
 
 1. Clone the repository
-2. Install dependencies:
+2. Install dependencies & copy .env files
 
-   ```bash
-   # Frontend
-   cd frontend
-   npm install
+  ```bash
+  # Frontend
+  cd frontend
+  npm install
+  cp .env.example .env
 
-   # Backend
-   cd ../backend
-   npm install
+  # Backend
+  cd ../backend
+  npm install
+  cp .env.example .env
 
-   # Smart Contracts
-   cd ../contracts
-   forge install
-   ```
+  # Smart Contracts
+  cd ../contracts
+  forge install
+  cp .env.example .env
+  ```
 
-3. Set up environment variables:
+3. Start the frontend and backend services
 
-   ```bash
-   # Frontend (.env)
-   REACT_APP_API_URL=http://localhost:3001
-   REACT_APP_INITIAL_STAKE=1
-   REACT_APP_MAX_STAKE=10
-   REACT_APP_MAX_FLIPS=10
-   REACT_APP_MIN_STAKE=0.1
-   SUPABASE_URL=your_supabase_url
-   SUPABASE_ANON_KEY=your_supabase_anon_key
+  ```bash
+  cd frontend
+  npm run start  # this will open a browser window
 
-   # Backend (.env)
-   SUPABASE_URL=your_supabase_url
-   SUPABASE_SERVICE_ROLE_KEY=your_supabase_key
-   L2_RPC_URL=your_l2_rpc_url
-   CONTRACT_ADDRESS=your_contract_address
-   SIGNER_PRIVATE_KEY=your_signer_private_key
+  cd backend
+  npm run start
+  ```
 
-   # Smart Contracts
-   RPC_URL=rpc_url
-   CHAIN_ID=chain_id
-   CONDUIT_API_KEY=conduit_api_key
-   FEE_COLLECTOR_ADDRESS=fee_collector_address
-   PRIVATE_KEY=deployment_private_key
-   SIGNER_PRIVATE_KEY=signer_private_key
-   ```
+> [!NOTE]
+> 
+> You can use the contract deployed on Tea Assam to test the game, or you can use forge 
+> to deploy your own contract.
 
 ## Testing
 
-```bash
-# Frontend tests
-cd frontend
-npm test
+Currently, tests are only defined for the backend and the smart contract. Coverage isn't
+great, but always open to more. 
 
+```bash
 # Backend tests
 cd backend
-npm test
+npm run test
 
 # Smart contract tests
 cd contracts
