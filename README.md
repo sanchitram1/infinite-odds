@@ -1,144 +1,158 @@
-# Infinite Odds
+# Infinite Odds Game
 
-A double-or-nothing coin flip game built on TEA's L2, where players can stake native TEA
-tokens and potentially double their stake with each successful flip.
-
-## Tech Stack
-
-- **Frontend**: React, ethers.js
-- **Database**: Supabase
-- **Smart Contracts**: Solidity, Foundry
-- **Chain**: TEA L2 (Assam)
-- **Authentication**: MetaMask for wallet connection
-- **Signatures**: EIP-712 for secure cashouts
-- **Deployments**: Foundry for smart contract, vercel for frontend (TODO)
+A decentralized coin flip game built with React, Fastify, and Solidity.
 
 ## Project Structure
 
 ```
 infinite-odds/
-├── frontend/               # React frontend application
-│   ├── src/
-│   │   ├── components/    # React components
-│   │   ├── contracts/     # Contract interfaces and ABIs
-│   │   └── utils/         # Game logic and utilities
-│   └── .env.example       # Environment variables template
-└── contracts/             # Solidity smart contracts
+├── frontend/                 # React frontend application
+│   ├── public/              # Static assets
+│   ├── src/                 # Source code
+│   │   ├── api/            # API client
+│   │   ├── components/     # React components
+│   │   ├── contracts/      # Contract interactions
+│   │   └── utils/          # Utility functions
+├── backend/                 # Fastify backend application
+│   ├── src/                # Source code
+│   │   ├── config/        # Configuration
+│   │   ├── routes/        # API routes
+│   │   └── db/           # Database models
+│   └── tests/             # Backend tests
+└── contracts/              # Solidity smart contracts
     ├── src/               # Contract source code
-    ├── test/              # Contract test files
-    └── script/            # Deployment scripts
+    └── test/             # Contract tests
 ```
 
-## Getting Started
+## Development Setup
 
-### Prerequisites
-
-- Node.js >= 16
-- Foundry (for smart contracts)
-- MetaMask wallet
-- TEA tokens on Assam L2
-
-### Frontend Setup
-
-1. Install dependencies:
-
-```bash
-cd frontend
-npm install
-```
-
-2. Configure environment variables:
-
-```bash
-cp .env.example .env.local
-# Edit .env.local with your values
-```
-
-3. Start development server:
-
-```bash
-npm start
-```
-
-### Contract Development
-
-1. Install Foundry:
-
-```bash
-curl -L https://foundry.paradigm.xyz | bash
-foundryup
-```
-
-Or, if you have `pkgx` installed, just prefix all the steps below with `pkgx`.
-
+1. Clone the repository
 2. Install dependencies:
 
+   ```bash
+   # Frontend
+   cd frontend
+   npm install
+
+   # Backend
+   cd ../backend
+   npm install
+
+   # Smart Contracts
+   cd ../contracts
+   forge install
+   ```
+
+3. Set up environment variables:
+
+   ```bash
+   # Frontend (.env)
+   REACT_APP_API_URL=http://localhost:3001
+   REACT_APP_INITIAL_STAKE=1
+   REACT_APP_MAX_STAKE=10
+   REACT_APP_MAX_FLIPS=10
+   REACT_APP_MIN_STAKE=0.1
+   SUPABASE_URL=your_supabase_url
+   SUPABASE_ANON_KEY=your_supabase_anon_key
+
+   # Backend (.env)
+   SUPABASE_URL=your_supabase_url
+   SUPABASE_SERVICE_ROLE_KEY=your_supabase_key
+   L2_RPC_URL=your_l2_rpc_url
+   CONTRACT_ADDRESS=your_contract_address
+   SIGNER_PRIVATE_KEY=your_signer_private_key
+
+   # Smart Contracts
+   RPC_URL=rpc_url
+   CHAIN_ID=chain_id
+   CONDUIT_API_KEY=conduit_api_key
+   FEE_COLLECTOR_ADDRESS=fee_collector_address
+   PRIVATE_KEY=deployment_private_key
+   SIGNER_PRIVATE_KEY=signer_private_key
+   ```
+
+## Testing
+
 ```bash
+# Frontend tests
+cd frontend
+npm test
+
+# Backend tests
+cd backend
+npm test
+
+# Smart contract tests
 cd contracts
-forge install
+forge test
 ```
 
-3. Run tests:
+## Deployment
 
-```bash
-forge test -vv
-```
+### Frontend (Vercel)
 
-4. Deploy contract:
+1. Push your code to GitHub
+2. Create a new project on Vercel
+3. Import your GitHub repository
+4. Configure environment variables in Vercel dashboard
+5. Deploy with the following settings:
+   - Framework Preset: Create React App
+   - Build Command: `npm run build`
+   - Output Directory: `build`
+   - Install Command: `npm install`
 
-```bash
-# Configure .env with your values
-cp .env.example .env
-# Deploy to Assam L2
-forge script script/Deploy.s.sol:DeployInfiniteOdds --rpc-url $RPC_URL --broadcast --legacy -vvvv
-```
+### Backend (Vercel)
 
-## Game Flow
+1. Create a `vercel.json` in the backend directory:
 
-1. Connect wallet using MetaMask
-2. Stake TEA (0-10 tokens)
-3. Flip coin:
-   - Heads (2x): Continue playing or cash out
-   - Tails: Game over, stake is lost
-4. Cash out: Get winnings transferred to wallet
+   ```json
+   {
+     "version": 2,
+     "builds": [
+       {
+         "src": "src/index.js",
+         "use": "@vercel/node"
+       }
+     ],
+     "routes": [
+       {
+         "src": "/(.*)",
+         "dest": "src/index.js"
+       }
+     ]
+   }
+   ```
 
-## Improvements Checklist
+2. Deploy using Vercel CLI:
 
-### Security
+   ```bash
+   cd backend
+   vercel
+   ```
 
-- [ ] Move signature generation to a secure backend service
+3. Configure environment variables in Vercel dashboard
 
-### Architecture
+### Smart Contracts
 
-- [ ] Rate limiting for cashouts, scaling in general
-- [x] Reorganize frontend code structure
-- [ ] Error handling and recovery
-- [ ] Store txn hash in db for debugging
-- [x] Better db schema
-- [ ] RLS
+1. Deploy using Foundry:
 
-### Frontend
+   ```bash
+   cd contracts
+   forge create src/InfiniteOdds.sol:InfiniteOdds \
+     --rpc-url $L2_RPC_URL \
+     --private-key $DEPLOYER_PRIVATE_KEY
+   ```
 
-- [x] Add loading states and better error messages
-- [x] Improve UI/UX design
+2. Update the contract address in your backend environment variables
 
-### Business Logic
+## Contributing
 
-- [ ] Define fee structure and recipients
-- [ ] Implement treasury management
-- [ ] Add variable stake limits based on contract balance
-- [ ] Add progressive jackpot system
+1. Fork the repository
+2. Create a feature branch
+3. Commit your changes
+4. Push to the branch
+5. Create a Pull Request
 
-### Testing
+## License
 
-- [ ] Add frontend unit tests
-- [ ] Add frontend integration tests
-- [ ] Add contract fuzzing tests
-- [ ] Add load testing
-
-### Documentation
-
-- [ ] Add API documentation
-- [ ] Add contract documentation
-- [ ] Add deployment guides for different environments
-- [ ] Add contribution guidelines
+MIT
