@@ -11,7 +11,7 @@ import {
   requestStake,
 } from '../api/client';
 import { formatNumber, TxHashWithLink } from '../utils/display';
-import { FlipGame, MAX_FLIPS, MAX_STAKE, MIN_STAKE } from '../utils/gameLogic';
+import { FlipGame, MAX_FLIPS, MAX_STAKE, MIN_STAKE, INITIAL_STAKE } from '../utils/gameLogic';
 import GameHistory from './GameHistory';
 import LoadingScreen from './LoadingScreen';
 import { Button } from './ui/button';
@@ -23,7 +23,7 @@ const Game = ({ account, provider }) => {
   const [gameState, setGameState] = useState(game.getGameState());
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [stakeAmount, setStakeAmount] = useState('1');
+  const [stakeAmount, setStakeAmount] = useState(INITIAL_STAKE.toString());
   const [hasStaked, setHasStaked] = useState(false);
   const [signer, setSigner] = useState(null);
   const [lastTxHash, setLastTxHash] = useState(null);
@@ -207,13 +207,13 @@ const Game = ({ account, provider }) => {
             <div className="space-y-4">
               <Input
                 type="number"
-                placeholder="Enter your stake (0-10 TEA)"
+                placeholder={`Enter your stake (${MIN_STAKE}-${MAX_STAKE} TEA)`}
                 value={stakeAmount}
                 onChange={(e) => setStakeAmount(e.target.value)}
                 disabled={isLoading}
-                min="0"
-                max="10"
-                step="0.1"
+                min={MIN_STAKE}
+                max={MAX_STAKE}
+                step={0.1}
               />
               <Button onClick={handleStake} disabled={isLoading || !signer} className="w-full">
                 {!signer ? 'Initializing...' : 'Start Game'}
