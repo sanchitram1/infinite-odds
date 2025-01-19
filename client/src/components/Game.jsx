@@ -10,6 +10,7 @@ import {
   requestCashOut,
   requestStake,
 } from '../api/client';
+import { formatNumber, TxHashWithLink } from '../utils/display';
 import { FlipGame, MAX_FLIPS, MAX_STAKE, MIN_STAKE } from '../utils/gameLogic';
 import GameHistory from './GameHistory';
 import LoadingScreen from './LoadingScreen';
@@ -172,7 +173,7 @@ const Game = ({ account, provider }) => {
   if (isLoading) {
     return (
       <LoadingScreen
-        message={lastTxHash ? `Transaction pending: ${lastTxHash}` : 'Processing...'}
+        message={lastTxHash ? <>Transaction pending: <TxHashWithLink txHash={lastTxHash} /></> : 'Processing...'}
       />
     );
   }
@@ -221,7 +222,7 @@ const Game = ({ account, provider }) => {
           ) : (
             <div className="space-y-4">
               <p className="text-lg font-semibold text-center">
-                Current Earnings: {gameState.currentStake.toFixed(2)} TEA
+                Current Earnings: {formatNumber(gameState.currentStake)} TEA
               </p>
               <p className="text-md text-center">
                 Flip Count: {gameState.flipCount}/{MAX_FLIPS}
@@ -274,7 +275,7 @@ const Game = ({ account, provider }) => {
 
           {lastTxHash && (
             <p className="mt-4 text-center text-xs text-gray-500">
-              Transaction Hash: {lastTxHash.slice(0, 6)}...{lastTxHash.slice(-4)}
+              Transaction Hash: <TxHashWithLink txHash={lastTxHash} />
             </p>
           )}
         </CardContent>

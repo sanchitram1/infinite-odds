@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 
 import { getPlayer } from '../api/client';
 import { supabase } from '../supabaseClient';
+import { formatNumber } from '../utils/display';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 
 export default function GameHistory({ account }) {
@@ -66,8 +67,8 @@ export default function GameHistory({ account }) {
           <ul className="space-y-2">
             {gameHistory.map((game, index) => (
               <li key={index} className="border-b pb-2">
-                <p>Initial Stake: {game.stake} TEA</p>
-                <p>Final Stake: {game.winnings || 0} TEA</p>
+                <p>Initial Stake: {formatNumber(game.stake)} TEA</p>
+                <p>Final Stake: {formatNumber(game.winnings || 0)} TEA</p>
                 <p>Result: {game.result}</p>
                 <p>Flips: {game.flips?.length || 0}</p>
                 <p className="text-sm text-gray-500">

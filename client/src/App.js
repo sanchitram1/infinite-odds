@@ -4,6 +4,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 
 import Game from './components/Game.jsx';
 import { Button } from './components/ui/button.jsx';
+import { formatTxHash, formatNumber } from './utils/display.js';
 
 function App() {
   const [account, setAccount] = useState(null);
@@ -55,10 +56,10 @@ function App() {
             ) : (
               <div className="text-right">
                 <p className="text-sm font-medium">
-                  Connected: {account.slice(0, 6)}...{account.slice(-4)}
+                  Connected: {formatTxHash(account)}
                 </p>
                 {balance && (
-                  <p className="text-sm text-gray-600">TEA Balance: {Number(balance).toFixed(4)}</p>
+                  <p className="text-sm text-gray-600">TEA Balance: {formatNumber(Number(balance))}</p>
                 )}
               </div>
             )}
