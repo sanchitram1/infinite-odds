@@ -23,6 +23,7 @@ const Game = ({ account, provider }) => {
   const [gameState, setGameState] = useState(game.getGameState());
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(null);
   const [stakeAmount, setStakeAmount] = useState(INITIAL_STAKE.toString());
   const [hasStaked, setHasStaked] = useState(false);
   const [signer, setSigner] = useState(null);
@@ -61,17 +62,17 @@ const Game = ({ account, provider }) => {
         throw new Error(`Stake amount must be between ${MIN_STAKE} and ${MAX_STAKE} TEA`);
       }
 
-      // Create game in database first
-      const gameData = await createGame(playerId, Number(stakeAmount));
-      setCurrentGameId(gameData.id);
-
-      // Get stake transaction from backend
-      const { tx } = await requestStake(gameData.id, amount.toString());
+      // Get stake transaction from backend first
+      const { tx } = await requestStake(0, amount.toString()); // Using 0 as temporary gameId
 
       // Execute stake transaction
       const transaction = await signer.sendTransaction(tx);
       setLastTxHash(transaction.hash);
       await transaction.wait();
+
+      // Only create game in database after successful stake
+      const gameData = await createGame(playerId, Number(stakeAmount));
+      setCurrentGameId(gameData.id);
 
       // Initialize game state
       const newGame = new FlipGame(Number(stakeAmount));
@@ -80,10 +81,11 @@ const Game = ({ account, provider }) => {
       setHasStaked(true);
     } catch (err) {
       console.error('Staking error:', err);
-      setError(err.message);
-      // If we created a game but staking failed, update game status
-      if (currentGameId) {
-        await updateGame(currentGameId, { result: 'failed' });
+      // Show friendly message for transaction rejection
+      if (err.code === 'ACTION_REJECTED') {
+        setError('Next time, maybe accept the transaction :S');
+      } else {
+        setError(err.message);
       }
     } finally {
       setIsLoading(false);
@@ -120,6 +122,7 @@ const Game = ({ account, provider }) => {
 
     try {
       setError(null);
+      setSuccess(null);
       setIsLoading(true);
       setLastTxHash(null);
 
@@ -130,36 +133,41 @@ const Game = ({ account, provider }) => {
       const result = game.cashOut();
       if (!result) return;
 
-      setGameState(game.getGameState());
-
       const amount = ethers.utils.parseEther(result.finalStake.toString());
 
-      // Record all flips before cashout
-      await recordFlips(currentGameId, game.flips);
-
       // Get cashout data from backend
-      const { tx, signature, nonce } = await requestCashOut(
+      const { tx } = await requestCashOut(
         currentGameId,
         amount.toString(),
         account,
       );
 
-      // Execute transaction
+      // Execute transaction first
       const transaction = await signer.sendTransaction(tx);
       setLastTxHash(transaction.hash);
       await transaction.wait();
 
-      // Update game status
+      // Only after successful transaction, update the database
+      await recordFlips(currentGameId, game.flips);
       await updateGame(currentGameId, {
         result: 'cash-out',
         winnings: result.finalStake,
       });
 
-      setError('Successfully cashed out! Start a new game to play again.');
-      setHasStaked(false);
+      // Update UI state only after everything is complete
+      setGameState(game.getGameState());
+      setSuccess('Successfully cashed out! Start a new game to play again.');
+      setHasStaked(false); // This disables the game controls
     } catch (err) {
       console.error('Error cashing out:', err);
-      setError(err.message);
+      if (err.code === 'ACTION_REJECTED') {
+        setError('Next time, maybe accept the transaction :S');
+      } else {
+        setError(err.message);
+      }
+      // If there's an error, revert the game state
+      game.isGameOver = false;
+      setGameState({...game.getGameState()});
     } finally {
       setIsLoading(false);
     }
@@ -168,6 +176,8 @@ const Game = ({ account, provider }) => {
   const startNewGame = useCallback(() => {
     setHasStaked(false);
     setCurrentGameId(null);
+    setError(null);
+    setSuccess(null);
   }, []);
 
   if (isLoading) {
@@ -266,6 +276,8 @@ const Game = ({ account, provider }) => {
           )}
 
           {error && <p className="mt-4 text-center font-medium text-sm text-red-500">{error}</p>}
+
+          {success && <p className="mt-4 text-center font-medium text-sm text-green-500">{success}</p>}
 
           {isLoading && (
             <p className="mt-4 text-center font-medium text-sm text-blue-500">
