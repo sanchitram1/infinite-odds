@@ -156,14 +156,14 @@ Any PRs are welcome, but here's my personal list of stuff I'd like to see:
 ## General
 
 - testing
+- non-crypto explanation of the paradox / SBF reference would be fun
 
 ## UI
 
 - re-render game history on end
+- better game history
 - better focus on the current game elsewhere (use v0 for ideas)
-- history should be expandable
 - new game should reset all error messages
-- display / hyperlink txn hashes
 - green font for successful cashOut
 
 ## Backend
