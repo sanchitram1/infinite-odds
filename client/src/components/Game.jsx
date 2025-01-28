@@ -1,6 +1,7 @@
 import { ethers } from 'ethers';
 import { CoinsIcon } from 'lucide-react';
 import React, { useState, useCallback, useEffect } from 'react';
+import { DotLottieReact } from '@lottiefiles/dotlottie-react';
 
 import {
   createPlayer,
@@ -18,6 +19,22 @@ import { Button } from './ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Input } from './ui/input';
 
+const CoinFlipAnimation = ({ isPlaying }) => {
+  if (!isPlaying) return null;
+  
+  return (
+    <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50">
+      <div className="w-64 h-64">
+        <DotLottieReact
+          src="https://lottie.host/6c67dc3f-6bce-49de-babd-e7d04f5368f7/iwZfZnuOPH.lottie"
+          autoplay
+          loop={false}
+        />
+      </div>
+    </div>
+  );
+};
+
 const Game = ({ account, provider }) => {
   const [game, setGame] = useState(() => new FlipGame());
   const [gameState, setGameState] = useState(game.getGameState());
@@ -30,6 +47,7 @@ const Game = ({ account, provider }) => {
   const [lastTxHash, setLastTxHash] = useState(null);
   const [currentGameId, setCurrentGameId] = useState(null);
   const [playerId, setPlayerId] = useState(null);
+  const [isFlipping, setIsFlipping] = useState(false);
 
   // Initialize ethers signer and create/get player
   useEffect(() => {
@@ -92,30 +110,20 @@ const Game = ({ account, provider }) => {
     }
   };
 
-  const handleFlip = useCallback(async () => {
-    if (!currentGameId) return;
-
-    setError(null);
-    const result = game.flip();
-
-    if (result) {
-      setGameState(game.getGameState());
-
-      try {
-        if (result.isGameOver) {
-          // Record all flips and update game status on bust
-          await recordFlips(currentGameId, game.flips);
-          await updateGame(currentGameId, {
-            result: 'bust',
-            winnings: 0,
-          });
-        }
-      } catch (err) {
-        console.error('Error recording flip:', err);
-        setError('Game state saved locally but there was an error saving to the server.');
-      }
+  const handleFlip = async () => {
+    try {
+      setError(null);
+      setIsFlipping(true);
+      setTimeout(() => {
+        setIsFlipping(false);
+        game.flip();
+        setGameState(game.getGameState());
+      }, 2000); // Animation duration
+    } catch (err) {
+      setError(err.message);
+      setIsFlipping(false);
     }
-  }, [game, currentGameId]);
+  };
 
   const handleCashOut = useCallback(async () => {
     if (!currentGameId) return;
@@ -205,6 +213,7 @@ const Game = ({ account, provider }) => {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-100 to-blue-200 flex flex-col items-center justify-center p-4">
+      <CoinFlipAnimation isPlaying={isFlipping} />
       <Card className="w-full max-w-md">
         <CardHeader>
           <CardTitle className="text-center">St. Petersburg Coin Flip</CardTitle>
@@ -252,10 +261,10 @@ const Game = ({ account, provider }) => {
               <div className="flex justify-center space-x-4">
                 <Button
                   onClick={handleFlip}
-                  disabled={gameState.isGameOver || gameState.flipCount >= MAX_FLIPS || isLoading}
+                  disabled={isFlipping || !hasStaked}
                   className="flex-1"
                 >
-                  <CoinsIcon className="mr-2 h-4 w-4" /> Flip Coin
+                  {isFlipping ? 'Flipping...' : 'Flip Coin'}
                 </Button>
                 <Button
                   onClick={handleCashOut}
